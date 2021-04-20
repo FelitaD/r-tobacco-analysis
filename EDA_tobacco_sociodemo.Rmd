@@ -1,0 +1,86 @@
+---
+title: "EDA_tobacco_sociodemo"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(naniar)
+```
+
+```{r}
+data <- read.csv('~/CNAM/Stats/Mini-memoire/data/tobacco_sociodemo.csv')
+```
+
+# Age 
+X_ageg5yr : reported age in 5-year age categories #  14 tranches de 5 ans
+X_age65yr : reported age in 2 age categories # 2 tranches avant/apres 65 ans
+X_age_g : imputed in 6 groups
+
+```{r}
+data %>% replace_with_na(replace = list(X_AGE65YR = c(3)))
+```
+
+# Genre
+sex : respondents sex
+
+# Famille
+marital : marital status # 1 married, 2 divorced, 3 widowed, 4 separated, 5, never married, 6 member of an unmarried couple
+pregnant : pregnancy status # 1 yes, 2 no
+numadult : number of adults in household 
+children : number of children in household
+X_chldcnt : computed number of children in household # 5 five or more children
+
+```{r}
+data %>% replace_with_na(replace = list(PREGNANT = c(7, 9)))
+
+data$X_CHLDCNT[data$X_CHLDCNT == 88] <- 0
+data %>% replace_with_na(replace = list(CHILDREN = c(99)))
+
+data$X_CHLDCNT[data$X_CHLDCNT  == 1] <- 0
+data$X_CHLDCNT[data$X_CHLDCNT  == 2] <- 1
+data$X_CHLDCNT[data$X_CHLDCNT  == 3] <- 2
+data$X_CHLDCNT[data$X_CHLDCNT  == 4] <- 3
+data$X_CHLDCNT[data$X_CHLDCNT  == 5] <- 4
+data$X_CHLDCNT[data$X_CHLDCNT  == 6] <- 5
+data %>% replace_with_na(replace = list(X_CHLDCNT = c(9)))
+```
+
+# Education
+educa : education level, highest grade or year of schoool completed # 1 never attended school, 2 elementaire, 3 un peu de lycee, 4 bac, 5 un peu                                                                         de licence, 6 plus que licence
+X_educag : computed level of education completed categories # 1 did not graduate, 2 graduated high school, 3 attended college, 4 graduated college
+
+```{r}
+data %>% replace_with_na(replace = list(EDUCA = c(9)))
+data %>% replace_with_na(replace = list(X_EDUCAG = c(9)))
+```
+
+
+# Social status
+employ1 : employment status # 1 employed for wages, 2 self-employed, 3 out of work for 1 year or more, 4 out of work for less than a year, 5                                    homemaker, 6 student, 7 retired, 8 unable to work
+incom2 : income level
+X_incomg : computed income categories # 1 less than 15 000, 2 15 000 - 25 000, 3 25 000 - 35 000, 4 35 000 - 50 000, 5 50 000 or more
+renthom1 : own or rent a home # 1 own, 2 rent, 3 other arrangement
+veteran3 : veteran
+
+```{r}
+data %>% replace_with_na(replace = list(EMPLOY1 = c(9)))
+data %>% replace_with_na(replace = list(X_INCOMG = c(9)))
+data %>% replace_with_na(replace = list(RENTHOM1 = c(7, 9)))
+```
+
+# Smoking 
+smoke100 : smoked at least 100 cigarettes
+smokday2 : frequency of days now smoking
+stopsmk2 : stopped smoking in last 12 months
+lastsmk2 : interval since last smoked
+usenow3 : use of smokeless tobacco products
+X_smoker3 : computed smoking status
+X_rfsmok3 : current smoking calculated variable
+
+
+
+```{r}
+write.csv(data, 'tobacco_sociodemo.csv')
+```
+

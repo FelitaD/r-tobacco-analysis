@@ -1,0 +1,91 @@
+---
+title: "Tobacco"
+output: html_notebook
+---
+
+```{r load-packages, message = FALSE}
+library(tidyverse)
+library(ggplot2)
+```
+
+```{r load-data}
+load("brfss2013.RData")
+```
+
+# smoke100: Smoked At Least 100 Cigarettes
+# smokday2: Frequency Of Days Now Smoking
+# stopsmk2: Stopped Smoking In Past 12 Months
+# lastsmk2: Interval Since Last Smoked
+# usenow3: Use Of Smokeless Tobacco Products
+# X_rfhlth: Adults With Good Or Better Health
+# X_smoker3: Computed Smoking Status
+# X_rfsmok3 : Current Smoking Calculated Variable
+
+```{r}
+tobacco_use <- subset(brfss2013, select=c("smoke100", "smokday2", "stopsmk2", 
+                                          "lastsmk2", "usenow3", "X_rfhlth", 
+                                          "X_smoker3", "X_rfsmok3"))
+```
+
+
+```{r}
+ggplot(tobacco_use, aes(x=X_rfhlth, fill=X_smoker3)) + 
+  geom_bar()
+```
+
+```{r}
+ggplot(subset(tobacco_use, !is.na(X_rfhlth)), aes(x = X_rfhlth, fill = X_smoker3)) + 
+  geom_bar(position = "dodge") +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+table <- table(tobacco_use$X_rfhlth, tobacco_use$X_smoker3)
+prop.table(table)
+prop.table(table, 1)
+prop.table(table, 2)
+```
+```{r}
+ggplot(subset(tobacco_use, !is.na(X_rfhlth)), aes(x = X_rfhlth, fill = X_smoker3)) + 
+  geom_bar(position = "fill") +
+  ylab("proportion")
+```
+```{r}
+ggplot(subset(tobacco_use, !is.na(X_rfhlth)), aes(x = X_smoker3)) + 
+  geom_bar() +
+  facet_wrap(~X_rfhlth) +
+  theme(axis.text.x = element_text(angle = 45))
+
+```
+
+```{r}
+str(tobacco_use)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
