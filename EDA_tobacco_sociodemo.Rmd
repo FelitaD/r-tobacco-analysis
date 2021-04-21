@@ -1,73 +1,12 @@
 ---
-title: "EDA_tobacco_sociodemo"
-output: html_document
+title: "R Notebook"
+output: html_notebook
 ---
-
 ```{r load-packages, message = FALSE}
 library(tidyverse)
 library(ggplot2)
 library(ggthemes)
 library(stargazer)
-```
-
-```{r}
-data_sociodem <- read.csv('~/CNAM/Stats/Mini-memoire/data/tobacco_sociodemo2.csv')
-```
-
-## TABAGISME / AGE et SEXE
-
-```{r}
-data_sociodem$SEX <- as.factor(data_sociodem$SEX)
-levels(data_sociodem$SEX) <- c("Male", "Female")
-
-data_sociodem$X_AGEG5YR <- as.factor(data_sociodem$X_AGEG5YR)
-data_sociodem <- data_sociodem  %>% 
-  mutate(X_AGEG5YR = case_when(X_AGEG5YR == 1 ~ "18 - 24",
-                                    X_AGEG5YR == 2 ~ "25 - 29",
-                                    X_AGEG5YR == 3 ~ "30 - 34",
-                                    X_AGEG5YR == 4 ~ "35 - 39",
-                                    X_AGEG5YR == 5 ~ "40 - 44",
-                                    X_AGEG5YR == 6 ~ "45 - 49",
-                                    X_AGEG5YR == 7 ~ "50 - 54",
-                                    X_AGEG5YR == 8 ~ "55 - 59",
-                                    X_AGEG5YR == 9 ~ "60 - 64",
-                                    X_AGEG5YR == 10 ~ "65 - 69",
-                                    X_AGEG5YR == 11 ~ "70 - 74",
-                                    X_AGEG5YR == 12 ~ "75 - 79",
-                                    X_AGEG5YR == 13 ~ "80 +"))
-
-data_sociodem <- data_sociodem  %>% 
-  mutate(X_AGE65YR = case_when(X_AGE65YR == 1 ~ "18 - 64",
-                              X_AGE65YR == 2 ~ "65 +"))
-data_sociodem$X_AGE65YR <- as.factor(data_sociodem$X_AGE65YR)
-
-         
-data_sociodem$X_AGE_G <- as.factor(data_sociodem$X_AGE_G)
-data_sociodem <- data_sociodem  %>% 
-  mutate(X_AGE_G = case_when(X_AGE_G == 1 ~ "18 - 24",
-                             X_AGE_G == 2 ~ "25 - 34",
-                             X_AGE_G == 1 ~ "35 - 44",
-                             X_AGE_G == 1 ~ "45 - 54",
-                             X_AGE_G == 1 ~ "55 - 64",
-                             X_AGE_G == 1 ~ "65 +"))
-```
-
-# FAMILLE
-
-```{r}
-data_sociodem$MARITAL = cut(data_sociodem$MARITAL, 6, labels=c("Marié", 'Divorcé',"Veuf","Séparé","Jamais marié","Membre d'un couple non marié"))
-
-```
-
-## TABAGISME ET NIVEAU D'EDUCATION
-
-```{r}
-data_sociodem$X_EDUCAG <- as.factor(data_sociodem$X_EDUCAG)
-data_sociodem$EDUCA <- as.factor(data_sociodem$EDUCA)
-data_sociodem$X_SMOKER3 <- as.factor(data_sociodem$X_SMOKER3)
-levels(data_sociodem$X_EDUCAG) <- c("Sans diplome", "Baccalauréat", "Ens. Sup. Sans diplome", "Ens. Sup. Avec diplome")
-levels(data_sociodem$EDUCA) <- c("Jamais allé à l'école", "Elementaire", "Un peu lycée", "Fini lycée", "Un peu licence", "Fini licence")
-levels(data_sociodem$X_SMOKER3) <- c("Quotidiennement", "Occasionnellement", "Ancien fumeur", "Non fumeur")
 ```
 
 ```{r}
@@ -82,7 +21,9 @@ ggplot(subset(data_sociodem, !is.na(X_EDUCAG)), aes(x = X_EDUCAG, fill = X_SMOKE
   geom_bar(position = "fill") +
   labs(title = "Proportion du tabagisme en fonction du niveau d'achèvement", fill = 'Statut fumeur') +
   xlab("Education")
+
 ```
+
 ```{r}
 ggplot(subset(data_sociodem, !is.na(X_SMOKER3)), aes(x = X_SMOKER3, fill = EDUCA)) + 
   geom_bar(position = "fill") +
@@ -97,29 +38,3 @@ ggplot(subset(data_sociodem, !is.na(X_SMOKER3)), aes(x = X_SMOKER3, fill = X_EDU
   labs(title = "Proportion de fumeurs en fonction du niveau d'achevement", fill = 'Achevement') +
   xlab("Statut fumeur")
 ```
-
-## TABAGISME / SATUT SOCIAL
-
-```{r}
-data_sociodem$X_INCOMG = cut(data_sociodem$X_INCOMG, 5, labels=c("< 15 000", '15 - 25 000',"25 - 35 000","35 - 50 000","< 50 000"))
-
-data_sociodem$INCOME2 = cut(data_sociodem$INCOME2, 8, labels=c("< 10 000", "10 - 15 000",'15 - 20 000',"20 - 25 000", "25 - 35 000","35 - 50 000", "50 - 75  000", "75 000 +"))
-
-data_sociodem$EMPLOY1 = cut(data_sociodem$EMPLOY1, 8, labels=c("Salarié", "Auto-entrepeneur","Chômeur > 1 an","Chômeur < 1 an", "Personne au foyer","Etudiant", "Retraité", "Dans l'impossibilité de travailler"))
-
-data_sociodem$RENTHOM1 = cut(data_sociodem$RENTHOM1, 3, labels=c("Propriétaire", 'Locataire',"Autre"))
-```
-
-
-
-
-
-
-
-
-
-
-
-
-
-

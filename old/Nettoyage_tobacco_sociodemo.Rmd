@@ -1,5 +1,5 @@
 ---
-title: "Nettoyage_tobacco_sociodemo"
+title: "Nettoyage_NAs_tobacco_sociodemo"
 output: html_document
 ---
 
@@ -46,14 +46,15 @@ data <- data %>% replace_with_na(replace = list(X_INCOMG = c(9)))
 data <- data %>% replace_with_na(replace = list(RENTHOM1 = c(7, 9)))
 data <- data %>% replace_with_na(replace = list(VETERAN3 = c(7, 9)))
 data$VETERAN3[data$VETERAN3 == 2] <- 0
-
 ```
 
 # SMOKING
 
 ```{r}
 data <- data %>% replace_with_na(replace = list(X_RFSMOK3  = c(7, 9)))
-data$X_RFSMOK3[data$X_RFSMOK3 == 2] <- 0
+data$X_RFSMOK3[data$X_RFSMOK3 == 1] <- 0
+data$X_RFSMOK3[data$X_RFSMOK3 == 2] <- 1
+
 data <- data %>% replace_with_na(replace = list(X_SMOKER3  = c(9)))
 data <- data %>% replace_with_na(replace = list(USENOW3  = c(7, 9)))
 data <- data %>% replace_with_na(replace = list(LASTSMK2  = c(77,99)))
