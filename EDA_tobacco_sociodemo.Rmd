@@ -9,78 +9,124 @@ library(naniar)
 ```
 
 ```{r}
-data <- read.csv('~/CNAM/Stats/Mini-memoire/data/tobacco_sociodemo.csv')
+data_ <- read.csv('~/CNAM/Stats/Mini-memoire/data/tobacco_sociodemo.csv')
 ```
 
-# Age 
-X_ageg5yr : reported age in 5-year age categories #  14 tranches de 5 ans
-X_age65yr : reported age in 2 age categories # 2 tranches avant/apres 65 ans
+# AGE SEXE 
+X_ageg5yr : reported age in 5-year age categories 
+#  14 tranches de 5 ans
+X_age65yr : reported age in 2 age categories 
+# 2 tranches avant/apres 65 ans
 X_age_g : imputed in 6 groups
-
-```{r}
-data %>% replace_with_na(replace = list(X_AGE65YR = c(3)))
-```
-
-# Genre
 sex : respondents sex
 
-# Famille
-marital : marital status # 1 married, 2 divorced, 3 widowed, 4 separated, 5, never married, 6 member of an unmarried couple
-pregnant : pregnancy status # 1 yes, 2 no
+
+```{r}
+data <- data_ %>% replace_with_na(replace = list(X_AGE65YR = c(3)))
+data <- data_ %>% replace_with_na(replace = list(SEX = c(7, 9)))
+
+```
+
+# FAMILLE
+marital : marital status
+# 1 married, 2 divorced, 3 widowed, 4 separated, 5, never married, 6 member of an unmarried couple
+pregnant : pregnancy status 
+# 1 yes, 2 no
 numadult : number of adults in household 
 children : number of children in household
-X_chldcnt : computed number of children in household # 5 five or more children
+# 0: 0 child, 
+X_chldcnt : computed number of children in household 
+# 1: 0 child, ... , 6: 5 five or more children
 
 ```{r}
-data %>% replace_with_na(replace = list(PREGNANT = c(7, 9)))
+data <- data %>% replace_with_na(replace = list(PREGNANT = c(7, 9)))
+data$PREGNANT[data$PREGNANT == 2] <- 0
 
-data$X_CHLDCNT[data$X_CHLDCNT == 88] <- 0
-data %>% replace_with_na(replace = list(CHILDREN = c(99)))
+data$CHILDREN[data$CHILDREN == 88] <- 0
+data <- data %>% replace_with_na(replace = list(CHILDREN = c(99)))
 
-data$X_CHLDCNT[data$X_CHLDCNT  == 1] <- 0
-data$X_CHLDCNT[data$X_CHLDCNT  == 2] <- 1
-data$X_CHLDCNT[data$X_CHLDCNT  == 3] <- 2
-data$X_CHLDCNT[data$X_CHLDCNT  == 4] <- 3
-data$X_CHLDCNT[data$X_CHLDCNT  == 5] <- 4
-data$X_CHLDCNT[data$X_CHLDCNT  == 6] <- 5
-data %>% replace_with_na(replace = list(X_CHLDCNT = c(9)))
+data <- data %>% replace_with_na(replace = list(X_CHLDCNT = c(9)))
+
+data <- data %>% replace_with_na(replace = list(MARITAL = c(9)))
+
 ```
 
-# Education
-educa : education level, highest grade or year of schoool completed # 1 never attended school, 2 elementaire, 3 un peu de lycee, 4 bac, 5 un peu                                                                         de licence, 6 plus que licence
-X_educag : computed level of education completed categories # 1 did not graduate, 2 graduated high school, 3 attended college, 4 graduated college
+# EDUCATION
+educa : education level, highest grade or year of schoool completed 
+# 1 never attended school, 2 elementaire, 3 un peu de lycee, 4 bac, 5 un peu de licence, 6 plus que licence
+X_educag : computed level of education completed categories
+# 1 did not graduate, 2 graduated high school, 3 attended college, 4 graduated college
 
 ```{r}
-data %>% replace_with_na(replace = list(EDUCA = c(9)))
-data %>% replace_with_na(replace = list(X_EDUCAG = c(9)))
+data <- data %>% replace_with_na(replace = list(EDUCA = c(9)))
+
+data <- data %>% replace_with_na(replace = list(X_EDUCAG = c(9)))
 ```
 
 
-# Social status
-employ1 : employment status # 1 employed for wages, 2 self-employed, 3 out of work for 1 year or more, 4 out of work for less than a year, 5                                    homemaker, 6 student, 7 retired, 8 unable to work
-incom2 : income level
-X_incomg : computed income categories # 1 less than 15 000, 2 15 000 - 25 000, 3 25 000 - 35 000, 4 35 000 - 50 000, 5 50 000 or more
-renthom1 : own or rent a home # 1 own, 2 rent, 3 other arrangement
+# STATUT SOCIAL
+employ1 : employment status 
+# 1 employed for wages, 2 self-employed, 3 out of work for 1 year or more, 4 out of work for less than a year, 5 homemaker, 6 student, 7 retired, 8 unable to work
+income2 : income level 
+# 1 less than 10000, 2 10-15000, 3 15-20000, 4 20-25000, 5 25-35000, 6 35-50000, 7 50-75000, 8 75000 +
+X_incomg : computed income categories 
+# 1 less than 15 000, 2 15 000 - 25 000, 3 25 000 - 35 000, 4 35 000 - 50 000, 5 50 000 or more
+renthom1 : own or rent a home 
+# 1 own, 2 rent, 3 other arrangement
 veteran3 : veteran
 
 ```{r}
-data %>% replace_with_na(replace = list(EMPLOY1 = c(9)))
-data %>% replace_with_na(replace = list(X_INCOMG = c(9)))
-data %>% replace_with_na(replace = list(RENTHOM1 = c(7, 9)))
+data <- data %>% replace_with_na(replace = list(EMPLOY1 = c(9)))
+data <- data %>% replace_with_na(replace = list(INCOME2 = c(77, 99)))
+data <- data %>% replace_with_na(replace = list(X_INCOMG = c(9)))
+data <- data %>% replace_with_na(replace = list(RENTHOM1 = c(7, 9)))
+data <- data %>% replace_with_na(replace = list(VETERAN3 = c(7, 9)))
+data$VETERAN3[data$VETERAN3 == 2] <- 0
+
 ```
 
-# Smoking 
-smoke100 : smoked at least 100 cigarettes
-smokday2 : frequency of days now smoking
+# SMOKING
+smoke100 : smoked at least 100 cigarettes entire life 
+# 0 No, 1 Yes
+smokday2 : frequency of days now smoking 
+# 1 everyday, 2 some days, 3 not at all
 stopsmk2 : stopped smoking in last 12 months
+# 1 yes, 2 no
 lastsmk2 : interval since last smoked
+# 1: < 1 month, 2: 1-3 months, 3: 3-6 months, 4: 6-12 months, 5: 1-5 year, 6: 5-10 years, 8: never smoked regularly
 usenow3 : use of smokeless tobacco products
+# 1 everyday, 2 some days, 3 not at all
 X_smoker3 : computed smoking status
+# 1 smoker everyday, 2 smoker some days, 3 former smoker, 4 never smoked
 X_rfsmok3 : current smoking calculated variable
+# 0 Non smoker, 1 Smoker
 
+```{r}
+library(naniar)
+
+data <- data %>% replace_with_na(replace = list(X_RFSMOK3  = c(7, 9)))
+data$X_RFSMOK3[data$X_RFSMOK3 == 2] <- 0
+data <- data %>% replace_with_na(replace = list(X_SMOKER3  = c(9)))
+data <- data %>% replace_with_na(replace = list(USENOW3  = c(7, 9)))
+data <- data %>% replace_with_na(replace = list(LASTSMK2  = c(77,99)))
+data <- data %>% replace_with_na(replace = list(STOPSMK2  = c(7,9)))
+data$STOPSMK2[data$STOPSMK2 == 2] <- 0
+data <- data %>% replace_with_na(replace = list(SMOKDAY2 = c(7,9)))
+data <- data %>% replace_with_na(replace = list(SMOKE100 = c(7,9)))
+data$SMOKE100[data$SMOKE100 == 2] <- 0
+```
+
+```{r}
+data <- data[, c("X_STATE", "IYEAR", "SEX", "X_AGEG5YR",
+                  "X_AGE65YR", "X_AGE_G", "MARITAL", "PREGNANT", 
+                  "NUMADULT", "CHILDREN", "X_CHLDCNT", 
+                  "EDUCA", "X_EDUCAG", "EMPLOY1", 
+                  "INCOME2", "X_INCOMG", "RENTHOM1", "VETERAN3")]
+```
 
 
 ```{r}
-write.csv(data, 'tobacco_sociodemo.csv')
+write.csv(data, 'tobacco_sociodemo2.csv')
+View(data)
 ```
 
