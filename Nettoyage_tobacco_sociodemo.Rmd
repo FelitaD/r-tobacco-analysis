@@ -1,0 +1,83 @@
+---
+title: "Nettoyage_tobacco_sociodemo"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(naniar)
+```
+
+```{r}
+data_ <- read.csv('~/CNAM/Stats/Mini-memoire/data/tobacco_sociodemo.csv')
+```
+
+# AGE SEXE
+
+```{r}
+data <- data_ %>% replace_with_na(replace = list(X_AGE65YR = c(3)))
+data <- data %>% replace_with_na(replace = list(SEX = c(7, 9)))
+```
+
+# FAMILLE
+
+```{r}
+data <- data %>% replace_with_na(replace = list(PREGNANT = c(7, 9)))
+data$PREGNANT[data$PREGNANT == 2] <- 0
+data$CHILDREN[data$CHILDREN == 88] <- 0
+data <- data %>% replace_with_na(replace = list(CHILDREN = c(99)))
+data <- data %>% replace_with_na(replace = list(X_CHLDCNT = c(9)))
+data <- data %>% replace_with_na(replace = list(MARITAL = c(9)))
+```
+
+# EDUCATION
+
+```{r}
+data <- data %>% replace_with_na(replace = list(EDUCA = c(9)))
+data <- data %>% replace_with_na(replace = list(X_EDUCAG = c(9)))
+```
+
+# STATUT SOCIAL
+
+```{r}
+data <- data %>% replace_with_na(replace = list(EMPLOY1 = c(9)))
+data <- data %>% replace_with_na(replace = list(INCOME2 = c(77, 99)))
+data <- data %>% replace_with_na(replace = list(X_INCOMG = c(9)))
+data <- data %>% replace_with_na(replace = list(RENTHOM1 = c(7, 9)))
+data <- data %>% replace_with_na(replace = list(VETERAN3 = c(7, 9)))
+data$VETERAN3[data$VETERAN3 == 2] <- 0
+
+```
+
+# SMOKING
+
+```{r}
+data <- data %>% replace_with_na(replace = list(X_RFSMOK3  = c(7, 9)))
+data$X_RFSMOK3[data$X_RFSMOK3 == 2] <- 0
+data <- data %>% replace_with_na(replace = list(X_SMOKER3  = c(9)))
+data <- data %>% replace_with_na(replace = list(USENOW3  = c(7, 9)))
+data <- data %>% replace_with_na(replace = list(LASTSMK2  = c(77,99)))
+data <- data %>% replace_with_na(replace = list(STOPSMK2  = c(7,9)))
+data$STOPSMK2[data$STOPSMK2 == 2] <- 0
+data <- data %>% replace_with_na(replace = list(SMOKDAY2 = c(7,9)))
+data <- data %>% replace_with_na(replace = list(SMOKE100 = c(7,9)))
+data$SMOKE100[data$SMOKE100 == 2] <- 0
+```
+
+
+```{r}
+data <- data[, c("X_STATE", "IYEAR", "SEX", "X_AGEG5YR",
+                  "X_AGE65YR", "X_AGE_G", "MARITAL", "PREGNANT", 
+                  "NUMADULT", "CHILDREN", "X_CHLDCNT", 
+                  "EDUCA", "X_EDUCAG", "EMPLOY1", 
+                  "INCOME2", "X_INCOMG", "RENTHOM1", "VETERAN3", 
+                  "SMOKE100","SMOKDAY2","STOPSMK2",
+                  "LASTSMK2","USENOW3","X_SMOKER3", "X_RFSMOK3")]
+```
+
+
+```{r}
+write.csv(data, paste("~/CNAM/Stats/Mini-memoire/data/", 'tobacco_sociodemo2.csv',sep = ''))
+View(data)
+```
+

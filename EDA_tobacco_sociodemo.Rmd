@@ -3,130 +3,123 @@ title: "EDA_tobacco_sociodemo"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-library(naniar)
+```{r load-packages, message = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggthemes)
+library(stargazer)
 ```
 
 ```{r}
-data_ <- read.csv('~/CNAM/Stats/Mini-memoire/data/tobacco_sociodemo.csv')
+data_sociodem <- read.csv('~/CNAM/Stats/Mini-memoire/data/tobacco_sociodemo2.csv')
 ```
 
-# AGE SEXE 
-X_ageg5yr : reported age in 5-year age categories 
-#  14 tranches de 5 ans
-X_age65yr : reported age in 2 age categories 
-# 2 tranches avant/apres 65 ans
-X_age_g : imputed in 6 groups
-sex : respondents sex
-
+## TABAGISME / AGE et SEXE
 
 ```{r}
-data <- data_ %>% replace_with_na(replace = list(X_AGE65YR = c(3)))
-data <- data_ %>% replace_with_na(replace = list(SEX = c(7, 9)))
+data_sociodem$SEX <- as.factor(data_sociodem$SEX)
+levels(data_sociodem$SEX) <- c("Male", "Female")
 
+data_sociodem$X_AGEG5YR <- as.factor(data_sociodem$X_AGEG5YR)
+data_sociodem <- data_sociodem  %>% 
+  mutate(X_AGEG5YR = case_when(X_AGEG5YR == 1 ~ "18 - 24",
+                                    X_AGEG5YR == 2 ~ "25 - 29",
+                                    X_AGEG5YR == 3 ~ "30 - 34",
+                                    X_AGEG5YR == 4 ~ "35 - 39",
+                                    X_AGEG5YR == 5 ~ "40 - 44",
+                                    X_AGEG5YR == 6 ~ "45 - 49",
+                                    X_AGEG5YR == 7 ~ "50 - 54",
+                                    X_AGEG5YR == 8 ~ "55 - 59",
+                                    X_AGEG5YR == 9 ~ "60 - 64",
+                                    X_AGEG5YR == 10 ~ "65 - 69",
+                                    X_AGEG5YR == 11 ~ "70 - 74",
+                                    X_AGEG5YR == 12 ~ "75 - 79",
+                                    X_AGEG5YR == 13 ~ "80 +"))
+
+data_sociodem <- data_sociodem  %>% 
+  mutate(X_AGE65YR = case_when(X_AGE65YR == 1 ~ "18 - 64",
+                              X_AGE65YR == 2 ~ "65 +"))
+data_sociodem$X_AGE65YR <- as.factor(data_sociodem$X_AGE65YR)
+
+         
+data_sociodem$X_AGE_G <- as.factor(data_sociodem$X_AGE_G)
+data_sociodem <- data_sociodem  %>% 
+  mutate(X_AGE_G = case_when(X_AGE_G == 1 ~ "18 - 24",
+                             X_AGE_G == 2 ~ "25 - 34",
+                             X_AGE_G == 1 ~ "35 - 44",
+                             X_AGE_G == 1 ~ "45 - 54",
+                             X_AGE_G == 1 ~ "55 - 64",
+                             X_AGE_G == 1 ~ "65 +"))
 ```
 
 # FAMILLE
-marital : marital status
-# 1 married, 2 divorced, 3 widowed, 4 separated, 5, never married, 6 member of an unmarried couple
-pregnant : pregnancy status 
-# 1 yes, 2 no
-numadult : number of adults in household 
-children : number of children in household
-# 0: 0 child, 
-X_chldcnt : computed number of children in household 
-# 1: 0 child, ... , 6: 5 five or more children
 
 ```{r}
-data <- data %>% replace_with_na(replace = list(PREGNANT = c(7, 9)))
-data$PREGNANT[data$PREGNANT == 2] <- 0
-
-data$CHILDREN[data$CHILDREN == 88] <- 0
-data <- data %>% replace_with_na(replace = list(CHILDREN = c(99)))
-
-data <- data %>% replace_with_na(replace = list(X_CHLDCNT = c(9)))
-
-data <- data %>% replace_with_na(replace = list(MARITAL = c(9)))
+data_sociodem$MARITAL = cut(data_sociodem$MARITAL, 6, labels=c("Marié", 'Divorcé',"Veuf","Séparé","Jamais marié","Membre d'un couple non marié"))
 
 ```
 
-# EDUCATION
-educa : education level, highest grade or year of schoool completed 
-# 1 never attended school, 2 elementaire, 3 un peu de lycee, 4 bac, 5 un peu de licence, 6 plus que licence
-X_educag : computed level of education completed categories
-# 1 did not graduate, 2 graduated high school, 3 attended college, 4 graduated college
+## TABAGISME ET NIVEAU D'EDUCATION
 
 ```{r}
-data <- data %>% replace_with_na(replace = list(EDUCA = c(9)))
-
-data <- data %>% replace_with_na(replace = list(X_EDUCAG = c(9)))
-```
-
-
-# STATUT SOCIAL
-employ1 : employment status 
-# 1 employed for wages, 2 self-employed, 3 out of work for 1 year or more, 4 out of work for less than a year, 5 homemaker, 6 student, 7 retired, 8 unable to work
-income2 : income level 
-# 1 less than 10000, 2 10-15000, 3 15-20000, 4 20-25000, 5 25-35000, 6 35-50000, 7 50-75000, 8 75000 +
-X_incomg : computed income categories 
-# 1 less than 15 000, 2 15 000 - 25 000, 3 25 000 - 35 000, 4 35 000 - 50 000, 5 50 000 or more
-renthom1 : own or rent a home 
-# 1 own, 2 rent, 3 other arrangement
-veteran3 : veteran
-
-```{r}
-data <- data %>% replace_with_na(replace = list(EMPLOY1 = c(9)))
-data <- data %>% replace_with_na(replace = list(INCOME2 = c(77, 99)))
-data <- data %>% replace_with_na(replace = list(X_INCOMG = c(9)))
-data <- data %>% replace_with_na(replace = list(RENTHOM1 = c(7, 9)))
-data <- data %>% replace_with_na(replace = list(VETERAN3 = c(7, 9)))
-data$VETERAN3[data$VETERAN3 == 2] <- 0
-
-```
-
-# SMOKING
-smoke100 : smoked at least 100 cigarettes entire life 
-# 0 No, 1 Yes
-smokday2 : frequency of days now smoking 
-# 1 everyday, 2 some days, 3 not at all
-stopsmk2 : stopped smoking in last 12 months
-# 1 yes, 2 no
-lastsmk2 : interval since last smoked
-# 1: < 1 month, 2: 1-3 months, 3: 3-6 months, 4: 6-12 months, 5: 1-5 year, 6: 5-10 years, 8: never smoked regularly
-usenow3 : use of smokeless tobacco products
-# 1 everyday, 2 some days, 3 not at all
-X_smoker3 : computed smoking status
-# 1 smoker everyday, 2 smoker some days, 3 former smoker, 4 never smoked
-X_rfsmok3 : current smoking calculated variable
-# 0 Non smoker, 1 Smoker
-
-```{r}
-library(naniar)
-
-data <- data %>% replace_with_na(replace = list(X_RFSMOK3  = c(7, 9)))
-data$X_RFSMOK3[data$X_RFSMOK3 == 2] <- 0
-data <- data %>% replace_with_na(replace = list(X_SMOKER3  = c(9)))
-data <- data %>% replace_with_na(replace = list(USENOW3  = c(7, 9)))
-data <- data %>% replace_with_na(replace = list(LASTSMK2  = c(77,99)))
-data <- data %>% replace_with_na(replace = list(STOPSMK2  = c(7,9)))
-data$STOPSMK2[data$STOPSMK2 == 2] <- 0
-data <- data %>% replace_with_na(replace = list(SMOKDAY2 = c(7,9)))
-data <- data %>% replace_with_na(replace = list(SMOKE100 = c(7,9)))
-data$SMOKE100[data$SMOKE100 == 2] <- 0
+data_sociodem$X_EDUCAG <- as.factor(data_sociodem$X_EDUCAG)
+data_sociodem$EDUCA <- as.factor(data_sociodem$EDUCA)
+data_sociodem$X_SMOKER3 <- as.factor(data_sociodem$X_SMOKER3)
+levels(data_sociodem$X_EDUCAG) <- c("Sans diplome", "Baccalauréat", "Ens. Sup. Sans diplome", "Ens. Sup. Avec diplome")
+levels(data_sociodem$EDUCA) <- c("Jamais allé à l'école", "Elementaire", "Un peu lycée", "Fini lycée", "Un peu licence", "Fini licence")
+levels(data_sociodem$X_SMOKER3) <- c("Quotidiennement", "Occasionnellement", "Ancien fumeur", "Non fumeur")
 ```
 
 ```{r}
-data <- data[, c("X_STATE", "IYEAR", "SEX", "X_AGEG5YR",
-                  "X_AGE65YR", "X_AGE_G", "MARITAL", "PREGNANT", 
-                  "NUMADULT", "CHILDREN", "X_CHLDCNT", 
-                  "EDUCA", "X_EDUCAG", "EMPLOY1", 
-                  "INCOME2", "X_INCOMG", "RENTHOM1", "VETERAN3")]
-```
+table <- table(data_sociodem$X_EDUCAG, data_sociodem$X_SMOKER3)
 
+prop.table(table, 1) # lignes
+prop.table(table, 2) # colonnes
+```
 
 ```{r}
-write.csv(data, 'tobacco_sociodemo2.csv')
-View(data)
+ggplot(subset(data_sociodem, !is.na(X_EDUCAG)), aes(x = X_EDUCAG, fill = X_SMOKER3)) + 
+  geom_bar(position = "fill") +
+  labs(title = "Proportion du tabagisme en fonction du niveau d'achèvement", fill = 'Statut fumeur') +
+  xlab("Education")
 ```
+```{r}
+ggplot(subset(data_sociodem, !is.na(X_SMOKER3)), aes(x = X_SMOKER3, fill = EDUCA)) + 
+  geom_bar(position = "fill") +
+  labs(title = "Proportion de fumeurs en fonction du temps de la longueur de l'education", fill = "Longueur de l'education") +
+  xlab("Statut fumeur") +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+ggplot(subset(data_sociodem, !is.na(X_SMOKER3)), aes(x = X_SMOKER3, fill = X_EDUCAG)) + 
+  geom_bar(position = "fill") +
+  labs(title = "Proportion de fumeurs en fonction du niveau d'achevement", fill = 'Achevement') +
+  xlab("Statut fumeur")
+```
+
+## TABAGISME / SATUT SOCIAL
+
+```{r}
+data_sociodem$X_INCOMG = cut(data_sociodem$X_INCOMG, 5, labels=c("< 15 000", '15 - 25 000',"25 - 35 000","35 - 50 000","< 50 000"))
+
+data_sociodem$INCOME2 = cut(data_sociodem$INCOME2, 8, labels=c("< 10 000", "10 - 15 000",'15 - 20 000',"20 - 25 000", "25 - 35 000","35 - 50 000", "50 - 75  000", "75 000 +"))
+
+data_sociodem$EMPLOY1 = cut(data_sociodem$EMPLOY1, 8, labels=c("Salarié", "Auto-entrepeneur","Chômeur > 1 an","Chômeur < 1 an", "Personne au foyer","Etudiant", "Retraité", "Dans l'impossibilité de travailler"))
+
+data_sociodem$RENTHOM1 = cut(data_sociodem$RENTHOM1, 3, labels=c("Propriétaire", 'Locataire',"Autre"))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
 

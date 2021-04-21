@@ -9,7 +9,7 @@ library(ggplot2)
 ```
 
 ```{r load-data}
-load("brfss2013.RData")
+read_csv('~/CNAM/Stats/Mini-memoire/data/tobacco_sociodemo2.csv')
 ```
 
 # smoke100: Smoked At Least 100 Cigarettes

@@ -190,8 +190,7 @@ tobacco_sociodemo <- subset(data_2013_2019, select = c("SMOKE100","SMOKDAY2","ST
 ```
 
 ```{r}
-write.csv(data_2013_2019, 'data_2013_2019.csv')
-write.csv(tobacco_mentalhealth, 'tobacco_mentalhealth.csv')
-write.csv(tobacco_sociodemo, 'tobacco_sociodemo.csv')
-
+write.csv(data_2013_2019, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_2013_2019.csv',sep = ''))
+write.csv(tobacco_mentalhealth, paste("~/CNAM/Stats/Mini-memoire/data/", 'tobacco_mentalhealth.csv',sep = ''))
+write.csv(tobacco_sociodemo, paste("~/CNAM/Stats/Mini-memoire/data/", 'tobacco_sociodemo.csv',sep = ''))
 ```
