@@ -1,0 +1,90 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r load-packages, message = FALSE}
+library(tidyverse)
+library(ggplot2)
+library(ggthemes)
+library(stargazer)
+```
+
+```{r}
+table <- table(data$X_EDUCAG, data$X_SMOKER3)
+
+prop.table(table, 1) # lignes
+prop.table(table, 2) # colonnes
+```
+
+```{r}
+ggplot(subset(data, !is.na(X_EDUCAG)), aes(x = X_EDUCAG, fill = X_SMOKER3)) + 
+  geom_bar(position = "fill") +
+  labs(title = "Proportion du tabagisme en fonction du niveau d'achèvement", fill = 'Statut fumeur') +
+  xlab("Education")
+
+```
+
+```{r}
+ggplot(subset(data, !is.na(X_SMOKER3)), aes(x = X_SMOKER3, fill = EDUCA)) + 
+  geom_bar(position = "fill") +
+  labs(title = "Proportion de fumeurs en fonction du temps de la longueur de l'education", fill = "Longueur de l'education") +
+  xlab("Statut fumeur") +
+  theme(axis.text.x = element_text(angle = 90))
+```
+
+```{r}
+ggplot(subset(data, !is.na(X_SMOKER3)), aes(x = X_SMOKER3, fill = X_EDUCAG)) + 
+  geom_bar(position = "fill") +
+  labs(title = "Proportion de fumeurs en fonction du niveau d'achevement", fill = 'Achevement') +
+  xlab("Statut fumeur")
+```
+
+```{r}
+visualize(
+  data, 
+  xvar = "EMPLOY1", 
+  yvar = "X_RFSMOK3", 
+  type = "bar", 
+  custom = FALSE
+)
+```
+
+```{r}
+visualize(
+  data, 
+  xvar = "INCOME2", 
+  yvar = "X_RFSMOK3", 
+  type = "bar", 
+  custom = FALSE
+)
+```
+
+```{r}
+visualize(
+  data, 
+  xvar = "X_INCOMG", 
+  yvar = "X_RFSMOK3", 
+  type = "bar", 
+  custom = FALSE
+)
+```
+
+```{r}
+visualize(
+  data, 
+  xvar = "RENTHOM1", 
+  yvar = "X_RFSMOK3", 
+  type = "bar", 
+  custom = FALSE
+)
+```
+
+```{r fig.width = 7, fig.height = 7, dpi = 96}
+visualize(
+  data, 
+  xvar = "RENTHOM1", 
+  yvar = "X_SMOKER3", 
+  type = "bar", 
+  custom = FALSE
+)
+```

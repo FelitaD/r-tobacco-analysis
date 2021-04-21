@@ -165,10 +165,49 @@ data_2013_2019 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data_2013_20
 ```
 
 ```{r}
+write.csv(data_2013_2019, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_2013_2019',sep = ''))
+```
+
+```{r}
+data_2013_2019 <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_2013_2019")
+```
+
+```{r}
 data <- data_2013_2019
 ```
 
 # REPLACE NAs and RELABEL FACTORS
+
+# SMOKING
+
+```{r}
+data$X_RFSMOK3[data$X_RFSMOK3 == 1] <- "false" # Non
+data$X_RFSMOK3[data$X_RFSMOK3 == 2] <- "true" # Oui
+data <- data %>% replace_with_na(replace = list(X_RFSMOK3  = c(7, 9)))
+
+
+data <- data %>% replace_with_na(replace = list(X_SMOKER3  = c(9)))
+data$X_SMOKER3 = cut(data$X_SMOKER3, 4, labels=c("Fumeur quotidien", "Fumeur occasionnel", "Ancien fumeur", "Non fumeur"))
+
+data <- data %>% replace_with_na(replace = list(USENOW3  = c(7, 9)))
+data$USENOW3 <- as.factor(data$USENOW3)
+levels(data$USENOW3) <- c("Quotidiennement", "Occasionnellement", "Jamais")
+
+data <- data %>% replace_with_na(replace = list(LASTSMK2  = c(77,99)))
+data$LASTSMK2 = cut(data$LASTSMK2, 8, labels=c("< 1 month", '1 - 3 month',"3 - 6 months","6 - 12 months","1 - 5 year","5 - 10 years", "10 years or more", "Never smoked"))
+
+data$STOPSMK2[data$STOPSMK2 == 1] <- "true" # Non
+data$STOPSMK2[data$STOPSMK2 == 2] <- "false" # Oui
+data <- data %>% replace_with_na(replace = list(STOPSMK2  = c(7,9)))
+
+data <- data %>% replace_with_na(replace = list(SMOKDAY2 = c(7,9)))
+data$SMOKDAY2 <- as.factor(data$SMOKDAY2)
+levels(data$SMOKDAY2) <- c("Quotidiennement", "Occasionnellement", "Jamais")
+
+data$SMOKE100[data$SMOKE100 == 1] <- "true" # Non
+data$SMOKE100[data$SMOKE100 == 2] <- "false" # Oui
+data <- data %>% replace_with_na(replace = list(SMOKE100 = c(7,9)))
+```
 
 ## AGE SEXE
 
@@ -221,7 +260,8 @@ data <- data %>% replace_with_na(replace = list(CHILDREN = c(99)))
 data$X_CHLDCNT = cut(data$X_CHLDCNT, 6, labels=c("Pas d'enfant", '1 enfant',"2 enfants","3 enfants","4 enfants","Plus de 5 enfants"))
 
 data <- data %>% replace_with_na(replace = list(PREGNANT = c(7, 9)))
-data$PREGNANT[data$PREGNANT == 2] <- 0
+data$PREGNANT[data$PREGNANT == 1] <- "true" 
+data$PREGNANT[data$PREGNANT == 2] <- "false" 
 
 data <- data %>% replace_with_na(replace = list(X_CHLDCNT = c(9)))
 ```
@@ -254,35 +294,8 @@ data <- data %>% replace_with_na(replace = list(RENTHOM1 = c(7, 9)))
 data$RENTHOM1 = cut(data$RENTHOM1, 3, labels=c("Propriétaire", 'Locataire',"Autre"))
 
 data <- data %>% replace_with_na(replace = list(VETERAN3 = c(7, 9)))
-data$VETERAN3[data$VETERAN3 == 2] <- 0
-```
-
-# SMOKING
-
-```{r}
-data$X_RFSMOK3[data$X_RFSMOK3 == 1] <- 0 # Non
-data$X_RFSMOK3[data$X_RFSMOK3 == 2] <- 1 # Oui
-data <- data %>% replace_with_na(replace = list(X_RFSMOK3  = c(7, 9)))
-
-data <- data %>% replace_with_na(replace = list(X_SMOKER3  = c(9)))
-data$X_SMOKER3 = cut(data$X_SMOKER3, 4, labels=c("Fumeur quotidien", "Fumeur occasionnel", "Ancien fumeur", "Non fumeur"))
-
-data <- data %>% replace_with_na(replace = list(USENOW3  = c(7, 9)))
-data$USENOW3 <- as.factor(data$USENOW3)
-levels(data$USENOW3) <- c("Quotidiennement", "Occasionnellement", "Jamais")
-
-data <- data %>% replace_with_na(replace = list(LASTSMK2  = c(77,99)))
-data$LASTSMK2 = cut(data$LASTSMK2, 8, labels=c("< 1 month", '1 - 3 month',"3 - 6 months","6 - 12 months","1 - 5 year","5 - 10 years", "10 years or more", "Never smoked"))
-
-data$STOPSMK2[data$STOPSMK2 == 2] <- 0
-data <- data %>% replace_with_na(replace = list(STOPSMK2  = c(7,9)))
-
-data <- data %>% replace_with_na(replace = list(SMOKDAY2 = c(7,9)))
-data$SMOKDAY2 <- as.factor(data$SMOKDAY2)
-levels(data$SMOKDAY2) <- c("Quotidiennement", "Occasionnellement", "Jamais")
-
-data$SMOKE100[data$SMOKE100 == 2] <- 0
-data <- data %>% replace_with_na(replace = list(SMOKE100 = c(7,9)))
+data$VETERAN3[data$VETERAN3 == 1] <- "true" 
+data$VETERAN3[data$VETERAN3 == 2] <- "false" 
 ```
 
 ## SANTE MENTALE
@@ -317,7 +330,7 @@ levels(data$LSATISFY_FACTOR)[levels(data$LSATISFY_FACTOR)=="4"] <- "Très insati
 
 data <- data %>% replace_with_na(replace = list(ADDEPEV2  = c(7,9)))
 data$ADDEPEV2[data$ADDEPEV2  == 2] <- 0
-data$ADDEPEV2_FACTOR = cut(data$ADDEPEV2, 2, labels=c("Non", 'Oui'))
+data$ADDEPEV2_FACTOR = cut(data$ADDEPEV2, 2, labels=c("false", 'true'))
 
 ```
 
@@ -337,6 +350,5 @@ data <- data[, c("X_STATE", "IYEAR", "SEX", "X_AGEG5YR",
 
 ```{r}
 write.csv(data, paste("~/CNAM/Stats/Mini-memoire/data/", 'data.csv',sep = ''))
-View(data)
 ```
 
