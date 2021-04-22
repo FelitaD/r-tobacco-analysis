@@ -165,11 +165,11 @@ data_2013_2019 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data_2013_20
 ```
 
 ```{r}
-write.csv(data_2013_2019, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_2013_2019',sep = ''))
+write.csv(data_2013_2019, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_2013_2019.csv',sep = ''))
 ```
 
 ```{r}
-data_2013_2019 <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_2013_2019")
+data_2013_2019 <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_2013_2019.csv")
 ```
 
 ```{r}

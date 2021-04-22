@@ -6,7 +6,6 @@ library(readr)
 
 # Load data
 trend_data <- read_csv("data/data.csv")
-trend_description <- read_csv("data/trend_description.csv")
 
 # Define UI
 ui <- fluidPage(theme = shinytheme("lumen"),
@@ -38,7 +37,6 @@ ui <- fluidPage(theme = shinytheme("lumen"),
     # Output: Description, lineplot, and reference
     mainPanel(
       plotOutput(outputId = "lineplot", height = "300px"),
-      textOutput(outputId = "desc"),
       tags$a(href = "https://www.google.com/finance/domestic_trends", "Source: Google Domestic Trends", target = "_blank")
     )
   )
@@ -71,12 +69,6 @@ server <- function(input, output) {
       smooth_curve <- lowess(x = as.numeric(selected_trends()$date), y = selected_trends()$close, f = input$f)
       lines(smooth_curve, col = "#E6553A", lwd = 3)
     }
-  })
-
-  # Pull in description of trend
-  output$desc <- renderText({
-    trend_text <- filter(trend_description, type == input$type) %>% pull(text)
-    paste(trend_text, "The index is set to 1.0 on January 1, 2004 and is calculated only for US search traffic.")
   })
 }
 
