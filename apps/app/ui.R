@@ -14,7 +14,7 @@ shinyUI(fluidPage(
       
       selectInput("field", "Choose a field :",
                   choices = names(data),
-                  selected = "X_EDUCAG"),
+                  selected = "X_RFSMOK3"),
       
       selectInput("field2", "Choose a field :",
                   choices = names(data),

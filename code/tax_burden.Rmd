@@ -1,0 +1,40 @@
+---
+title: "Tobacco taxburdendata"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(psych)
+
+```
+
+```{r}
+taxburdendata <- read_delim('/Users/lmp/CNAM/Stats/Mini-memoire/data/The_Tax_Burden_on_Tobacco__1970-2019.csv', delim = ";")
+```
+```{r}
+str(taxburdendata)
+dim(taxburdendata)
+summary(taxburdendata)
+describe(taxburdendata)
+```
+
+```{r}
+unique(taxburdendata$TopicDesc)
+unique(taxburdendata$Datasource)
+unique(taxburdendata$MeasureDesc)
+unique(taxburdendata$MeasureId)
+unique(taxburdendata$SubMeasureDesc)
+unique(taxburdendata$SubMeasureID)
+unique(taxburdendata$SubMeasureIdDisplayOrder)
+unique(taxburdendata$Data_Value_Unit)
+unique(taxburdendata$Data_Value_Type)
+unique(taxburdendata$Source)
+unique(taxburdendata$TopicDesc)
+unique(taxburdendata$TopicTypeId)
+unique(taxburdendata$TopicId)
+```
+```{r}
+
+```
+

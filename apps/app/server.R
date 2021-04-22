@@ -3,8 +3,9 @@ library(shinythemes)
 library(dplyr)
 library(readr)
 library(ggplot2)
+library(tidyverse)
+library(xts)
 
-data$IYEAR 
 
 shinyServer(function(input, output) {
   
@@ -18,9 +19,30 @@ shinyServer(function(input, output) {
   
   output$plot <- renderPlot({
 
-    ggplot(count(data, X_RFSMOK3), aes(x=as.Date(data$IYEAR, origin="1970-01-01"), y=NUMADULT))  
+    # Sélection d'uniquement 1 variable
+    d <- select(data, IYEAR, !!as.symbol(input$field))
     
-    ggplot(data, aes(x=as.Date(IYEAR, origin="1970-01-01"), y=NUMADULT))
+    # Creation d'une variable contenant une valeur unique
+    e <- d  %>%
+      mutate(new = ifelse(!!as.symbol(input$field) == "true", 1, 0)) %>%
+      select(-!!as.symbol(input$field)) %>%
+      subset(!is.na(new))
+    
+    f <- e %>%
+      aggregate(by=list(e$IYEAR), sum) %>% 
+      select(-IYEAR)
+    
+    f$Group.1 <- as.Date(ISOdate(f$Group.1, 1, 1))
+    
+    t <- xts(order.by=f$Group.1, f$new) 
+    t <- t[-c(nrow(t)),] 
+    # colnames(t) <-!!as.symbol(input$field)
+    
+    
+    ggplot(t) + 
+      geom_line(aes(x=f$Group.1, y = f$new), colour = f$new)
+    
+    
 
   # output$plot <- renderPlot({
   #   ggplot(subset(data, !is.na(input$field2)), aes(x = !!as.symbol(input$field), fill = !!as.symbol(input$field2))) + 
@@ -31,22 +53,4 @@ shinyServer(function(input, output) {
   })
 })
 
-library(tidyverse)
-library(xts)
-
-d <- select(data, IYEAR, X_RFSMOK3)
-
-d <- d  %>%
-  mutate(fumeur = ifelse(X_RFSMOK3 == "true", 1, 0)) %>%
-  select(-X_RFSMOK3)
-e <- subset(d, !is.na(fumeur))
-agg <- aggregate(e, by=list(e$IYEAR), sum)
-
-agg %>% select(-IYEAR)
-agg$Group.1 <- as.Date(ISOdate(agg$Group.1, 1, 1))
-
-t <- xts(order.by=agg$Group.1, agg$fumeur)
-colnames(t)<-'Fumeur'
-
-plot(t)
 

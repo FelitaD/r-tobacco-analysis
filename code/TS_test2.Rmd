@@ -1,0 +1,53 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+```{r}
+    # Sélection d'uniquement 1 variable
+    d <- select(data, IYEAR, X_RFSMOK3)
+    
+    # Creation d'une variable contenant une valeur unique
+    e <- d  %>%
+      mutate(new = ifelse(X_RFSMOK3 == "true", 1, 0)) %>%
+      select(-X_RFSMOK3) %>%
+      subset(!is.na(new))
+    
+    f <- e %>%
+      aggregate(by=list(e$IYEAR), sum) %>% 
+      select(-IYEAR)
+    
+    f$Group.1 <- as.Date(ISOdate(f$Group.1, 1, 1))
+    
+    t <- xts(order.by=f$Group.1, f$new) 
+    t <- t[-c(nrow(t)),] 
+```
+
+```{r}
+test_data <-
+  data.frame(
+    var0 = 100 + c(0, cumsum(runif(49, -20, 20))),
+    var1 = 150 + c(0, cumsum(runif(49, -10, 10))),
+    date = seq(as.Date("2002-01-01"), by="1 month", length.out=100)
+  )
+```
+
+
+```{r}
+ggplot(t, aes(x = X_RFSMOK3)) + 
+  geom_line(aes(y = var0, colour = "var0"))
+```
+
+ggplot(test_data, aes(date)) + 
+  geom_line(aes(y = var0, colour = "var0")) + 
+  geom_line(aes(y = var1, colour = "var1"))
+
+library("reshape2")
+library("ggplot2")
+
+test_data_long <- melt(test_data, id="date")  # convert to long format
+
+ggplot(data=test_data_long,
+       aes(x=date, y=value, colour=variable)) +
+  geom_line()
