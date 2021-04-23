@@ -356,7 +356,7 @@ data$IDATE <- as.Date(data$IDATE, format="%Y-%m-%d")
 # ORDRE COLONNES et EXPORTATION
 
 ```{r}
-data <- data[, c("IDATE", "IYEAR", "X_STATE", "SEX", "X_AGEG5YR",
+data <- data[, c("IDATE", "IYEAR", "IMONTH",  "X_STATE", "SEX", "X_AGEG5YR",
                   "X_AGE65YR", "X_AGE_G", "MARITAL", "PREGNANT", 
                   "NUMADULT", "CHILDREN", "X_CHLDCNT", 
                   "EDUCA", "X_EDUCAG", "EMPLOY1", 

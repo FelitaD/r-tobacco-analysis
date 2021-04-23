@@ -13,64 +13,163 @@ library(tsbox)
 ```
 
 ```{r}
-methods(class="zoo")
-vignette("zoo")
-```
-
-
-```{r}
   data <- read.csv("~/CNAM/Stats/Mini-memoire/data/data.csv")
 ```
 
+#### Choix des variables
 
 ```{r}
-    data_subset <- select(data, IDATE, X_RFSMOK3, ADDEPEV2, POORHLTH, MENTHLTH)
+    data_subset <- select(data, IDATE, IYEAR, IMONTH,  X_RFSMOK3, ADDEPEV2, POORHLTH, MENTHLTH)
     data_subset <- data_subset[!is.na(data_subset$IDATE), ]
 
     data_subset <- data_subset  %>%
                     mutate(X_RFSMOK3 = ifelse(X_RFSMOK3 == "true", 1, 0)) 
     
-    data_subset_drop <- drop_na(data_subset) 
-    
-    data_subset_agg_day <- data_subset_drop  %>%
+    data_subset <- drop_na(data_subset) 
+```
+
+#### Choix du type d'aggregation 
+
+- Aggregation par jour
+```{r}
+    agg_day <- data_subset  %>%
+                    filter(IYEAR != 2020) %>%
                     group_by(IDATE) %>% 
                     summarize(ADDEPEV2 = mean(ADDEPEV2),
                             POORHLTH = mean(POORHLTH),
                             MENTHLTH = mean(MENTHLTH),
-                            X_RFSMOK3 = mean(X_RFSMOK3))
+                            X_RFSMOK3 = mean(X_RFSMOK3)) 
       
-    data_subset_agg_day$IDATE <- as.Date(data_subset_agg_day$IDATE, format="%Y-%m-%d")
+    agg_day$IDATE <- as.Date(agg_day$IDATE, format="%Y-%m-%d")
 ```
 
+- Aggregation par mois
 ```{r}
-  data_date <- data_subset_agg_day$IDATE
-  data <- data_subset_agg_day %>% select(-IDATE)
-  ts <- xts(data, data_date) 
+    agg_year <- data_subset  %>%
+                    filter(IYEAR != 2020) %>%
+                    group_by(IMONTH) %>% 
+                    summarize(ADDEPEV2 = mean(ADDEPEV2),
+                            POORHLTH = mean(POORHLTH),
+                            MENTHLTH = mean(MENTHLTH),
+                            X_RFSMOK3 = mean(X_RFSMOK3)) 
+      
+    agg_year$IYEAR <- as.Date(agg_year$IYEAR, format="%Y-%m-%d")
 ```
 
+- Aggregation par annee
 ```{r}
-  start(ts)
-  end(ts)
-  head(ts)
+    agg_year <- data_subset  %>%
+                    filter(IYEAR != 2020) %>%
+                    group_by(IYEAR) %>% 
+                    summarize(ADDEPEV2 = mean(ADDEPEV2),
+                            POORHLTH = mean(POORHLTH),
+                            MENTHLTH = mean(MENTHLTH),
+                            X_RFSMOK3 = mean(X_RFSMOK3)) 
+      
+    agg_year$IYEAR <- as.Date(agg_year$IYEAR, format="%Y-%m-%d")
+```
+
+## Creation des Time Series
+
+- Par jour
+```{r}
+  data_date <- agg_day$IDATE
+  agg_day <- agg_day %>% select(-IDATE)
+  ts <- xts(agg_day, data_date) 
   plot(ts)
 ```
 
+```{r}
+  smokers_mentalhealth <- ts_ts(ts)
+  print(smokers_mentalhealth)
+  plot(smokers_mentalhealth)
+  colnames(smokers_mentalhealth)
+```
+
+- Par annee
+```{r}
+  data_date <- agg_day$IYEAR
+  agg_day <- agg_day %>% select(-IDATE)
+  ts <- xts(data, agg_day) 
+  plot(ts)
+```
 
 ```{r}
-  w <- ts_ts(ts)
-  print(w)
-  plot(w)
+  smokers_mentalhealth <- ts_ts(ts)
+  print(smokers_mentalhealth)
+  plot(smokers_mentalhealth)
+  colnames(smokers_mentalhealth)
 ```
 
 
+#### DIVISION EN TIMES SERIES UNIVARIES
+
 ```{r}
-    d <- select(data, IDATE, X_RFSMOK3, ADDEPEV2, POORHLTH, MENTHLTH)
+  smokers_ts <- smokers_mentalhealth[, 'X_RFSMOK3']
+  depress_ts <- smokers_mentalhealth[, 'ADDEPEV2']
+  poor_phys_mental_ts <- smokers_mentalhealth[, 'POORHLTH']
+  poor_mental_ts <- smokers_mentalhealth[, 'MENTHLTH']
+  ts.plot(smokers_ts)
+  ts.plot(depress_ts)
+  ts.plot(poor_phys_mental_ts)
+  ts.plot(poor_mental_ts)
+```
+
+ <!-- Ressemble a du white noise : mean and variance constante, pas de correlations over time (pas de seasonal trends) -->
+ <!-- Bemol quand meme perdiodicite cycle d'un an (du au fetes moins d'interviews)  -->
+
+## WHITE NOISE MODEL - POOR MENTAL HEALTH
+
+```{r}
+ts.plot(poor_mental_ts)
+poor_mental_ts_diff <- diff(poor_mental_ts, lag = 4) # remove long term (seasonal) trends
+ts.plot(poor_mental_ts_diff)
+```
+
+Base pour d'autres modeles de time series
+
+ARIMA(p, d, q)
+- auto-regressive p
+- order of integration (differencing) d
+- moving average order q
+
+#### Estimation
+
+```{r}
+arima(poor_mental_ts_diff, order=c(0, 0, 0))
+```
+```{r}
+lapply(poor_mental_ts_diff, mean, na.rm = TRUE)
+lapply(poor_mental_ts_diff, var, na.rm = TRUE)
+```
+> La comparaison de la moyenne et de la variance est quasi-identique
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+    d <- select(data, IYEAR, X_RFSMOK3, ADDEPEV2, POORHLTH, MENTHLTH)
     # Creation d'une variable contenant une valeur unique
     e <- d  %>%
       mutate(X_RFSMOK3 = ifelse(X_RFSMOK3 == "true", 1, 0)) 
     e <- drop_na(e)
     f <- e %>%
-    group_by(IDATE) %>% 
+    filter(IYEAR != 2020) %>%
+    group_by(IYEAR) %>% 
     summarize(ADDEPEV2 = sum(ADDEPEV2),
               POORHLTH = mean(POORHLTH),
               MENTHLTH = mean(MENTHLTH),
@@ -78,7 +177,11 @@ vignette("zoo")
 ```
 
 ```{r}
-  a <- read.zoo(f, format ="%Y-%m-%d")
+  data_date <- agg_day$IDATE
+  agg_day <- agg_day %>% select(-IDATE)
+  ts <- xts(data, agg_day) 
+  plot(ts)
+  a <- xts(f)
 
 ```
 
