@@ -104,4 +104,8 @@ int_wn
 ts.plot(price_ts)  + abline(0, int_wn)
 
 ```
+## SCATTER PLOTS
+
+Est-ce que la relation entre prix du packet et nombre de packets consommees est negative ?
+
 

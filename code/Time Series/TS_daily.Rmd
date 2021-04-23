@@ -5,50 +5,48 @@ output: html_notebook
 ```{r}
 library(tidyverse)
 library(scales)
-library("reshape2")
-library("ggplot2")
+library(reshape2)
+library(ggplot2)
 library(xts)
 library(zoo)
 library(tsbox)
 ```
 
 ```{r}
-  data <- read.csv("~/CNAM/Stats/Mini-memoire/data/data.csv")
+  data <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_1985_2019_cleaned")
+  data <- data_1985_2019
 ```
 
 ## Analyse des relations entre tabac et sante mentale au cours du temps
+POORHLTH, MENTHLTH, SMOKE100 -> 1996 - 2019
 
 #### Choix des variables
 
 ```{r}
-    data_subset <- select(data, IDATE, IYEAR, IMONTH,  X_RFSMOK3, ADDEPEV2, POORHLTH, MENTHLTH)
-    data_subset <- data_subset[!is.na(data_subset$IDATE), ]
+    poorhtlth_mentlth_smoke100 <- data %>%
+      select(IDATE, IYEAR,  SMOKE100 , POORHLTH, MENTHLTH)
 
-    data_subset <- data_subset  %>%
-                    mutate(X_RFSMOK3 = ifelse(X_RFSMOK3 == "true", 1, 0)) 
-    
-    data_subset <- drop_na(data_subset) 
+    poorhtlth_mentlth_smoke100 <- drop_na(poorhtlth_mentlth_smoke100) 
 ```
 
-#### Creation de Time Series 
-
-- Par jour
+#### Aggregation par annee
 
 ```{r}
-    agg_day <- data_subset  %>%
+    agg_day <- poorhtlth_mentlth_smoke100  %>%
                     filter(IYEAR != 2020) %>%
                     group_by(IDATE) %>% 
-                    summarize(ADDEPEV2 = mean(ADDEPEV2),
-                            POORHLTH = mean(POORHLTH),
+                    summarise(POORHLTH = mean(POORHLTH),
                             MENTHLTH = mean(MENTHLTH),
-                            X_RFSMOK3 = mean(X_RFSMOK3)) 
-      
-    agg_day$IDATE <- as.Date(agg_day$IDATE, format="%Y-%m-%d")
+                            SMOKE100 = mean(SMOKE100)) 
 ```
 
+#### Creation de times series
+
 ```{r}
+  agg_day$IDATE <- as.Date(agg_day$IDATE, format="%Y-%m-%d")
   agg_day_date <- agg_day$IDATE
   agg_day <- agg_day %>% select(-IDATE)
+  
   xts_day <- xts(agg_day, agg_day_date) 
   ts <- ts_ts(xts_day)
   print(ts)
@@ -57,6 +55,7 @@ library(tsbox)
   ts.plot(ts, col = 2:3, xlab = "Year", ylab = "Nombre de jours", main = "tobacco and mental heath")
   legend("topleft", n[2:3], lty = 1, col = 2:3, bty = "n")
 ```
+# scale
 
 - Par annee
 
