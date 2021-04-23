@@ -9,10 +9,12 @@ library("reshape2")
 library("ggplot2")
 library(xts)
 library(zoo)
+library(tsbox)
 ```
 
 ```{r}
 methods(class="zoo")
+vignette("zoo")
 ```
 
 
@@ -41,27 +43,23 @@ methods(class="zoo")
 ```
 
 ```{r}
-
-```
-
-```{r}
   data_date <- data_subset_agg_day$IDATE
-  unique(data_subset_agg_day)
-```
-
-```{r}
-  ts <- zoo(data_subset_agg_day, data_date)
+  data <- data_subset_agg_day %>% select(-IDATE)
+  ts <- xts(data, data_date) 
 ```
 
 ```{r}
   start(ts)
   end(ts)
+  head(ts)
+  plot(ts)
 ```
 
 
 ```{r}
-w <- as.ts(data)
-print(w)
+  w <- ts_ts(ts)
+  print(w)
+  plot(w)
 ```
 
 
