@@ -227,9 +227,33 @@ library(psych)
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudGF4YnVyZGVuZGF0YSA8LSByZWFkX2RlbGltKCcvVXNlcnMvbG1wL0NOQU0vU3RhdHMvTWluaS1tZW1vaXJlL2RhdGEvVGhlX1RheF9CdXJkZW5fb25fVG9iYWNjb19fMTk3MC0yMDE5LmNzdicsIGRlbGltID0gXCI7XCIpXG5gYGAifQ== -->
-<pre class="r"><code>taxburdendata &lt;- read_delim(&#39;/Users/lmp/CNAM/Stats/Mini-memoire/data/The_Tax_Burden_on_Tobacco__1970-2019.csv&#39;, delim = &quot;;&quot;)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudGF4YnVyZGVuZGF0YSA8LSByZWFkX2RlbGltKCcvVXNlcnMvbG1wL0NOQU0vU3RhdHMvTWluaS1tZW1vaXJlL2RhdGEvVGhlX1RheF9CdXJkZW5fb25fVG9iYWNjb19fMTk3MC0yMDE5LmNzdicsIGRlbGltID0gXCI7XCIpXG5cbmBgYCJ9 -->
+<pre class="r"><code>taxburdendata &lt;- read_delim(&#39;/Users/lmp/CNAM/Stats/Mini-memoire/data/The_Tax_Burden_on_Tobacco__1970-2019.csv&#39;, delim = &quot;;&quot;)
+</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiXG7ilIDilIAgQ29sdW1uIHNwZWNpZmljYXRpb24g4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSA4pSAXG5jb2xzKFxuICBMb2NhdGlvbkFiYnIgPSBjb2xfY2hhcmFjdGVyKCksXG4gIExvY2F0aW9uRGVzYyA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgWWVhciA9IGNvbF9kb3VibGUoKSxcbiAgRGF0YXNvdXJjZSA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgVG9waWNEZXNjID0gY29sX2NoYXJhY3RlcigpLFxuICBNZWFzdXJlRGVzYyA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgU3ViTWVhc3VyZURlc2MgPSBjb2xfY2hhcmFjdGVyKCksXG4gIERhdGFfVmFsdWUgPSBjb2xfZG91YmxlKCksXG4gIERhdGFfVmFsdWVfVW5pdCA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgRGF0YV9WYWx1ZV9UeXBlID0gY29sX2NoYXJhY3RlcigpLFxuICBHZW9Mb2NhdGlvbiA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgU291cmNlID0gY29sX2NoYXJhY3RlcigpLFxuICBUb3BpY1R5cGVJZCA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgVG9waWNJZCA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgTWVhc3VyZUlkID0gY29sX2NoYXJhY3RlcigpLFxuICBTdWJNZWFzdXJlSUQgPSBjb2xfY2hhcmFjdGVyKCksXG4gIFN1Yk1lYXN1cmVJZERpc3BsYXlPcmRlciA9IGNvbF9kb3VibGUoKVxuKVxuIn0= -->
+<pre><code>
+── Column specification ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+cols(
+  LocationAbbr = col_character(),
+  LocationDesc = col_character(),
+  Year = col_double(),
+  Datasource = col_character(),
+  TopicDesc = col_character(),
+  MeasureDesc = col_character(),
+  SubMeasureDesc = col_character(),
+  Data_Value = col_double(),
+  Data_Value_Unit = col_character(),
+  Data_Value_Type = col_character(),
+  GeoLocation = col_character(),
+  Source = col_character(),
+  TopicTypeId = col_character(),
+  TopicId = col_character(),
+  MeasureId = col_character(),
+  SubMeasureID = col_character(),
+  SubMeasureIdDisplayOrder = col_double()
+)</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-chunk-begin -->
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc3RyKHRheGJ1cmRlbmRhdGEpXG5kaW0odGF4YnVyZGVuZGF0YSlcbnN1bW1hcnkodGF4YnVyZGVuZGF0YSlcbmRlc2NyaWJlKHRheGJ1cmRlbmRhdGEpXG5gYGAifQ== -->
@@ -242,22 +266,15 @@ describe(taxburdendata)</code></pre>
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudW5pcXVlKHRheGJ1cmRlbmRhdGEkWWVhcilcbnVuaXF1ZSh0YXhidXJkZW5kYXRhJFRvcGljRGVzYylcbnVuaXF1ZSh0YXhidXJkZW5kYXRhJERhdGFzb3VyY2UpXG51bmlxdWUodGF4YnVyZGVuZGF0YSRNZWFzdXJlRGVzYylcbnVuaXF1ZSh0YXhidXJkZW5kYXRhJE1lYXN1cmVJZClcbnVuaXF1ZSh0YXhidXJkZW5kYXRhJFN1Yk1lYXN1cmVEZXNjKVxudW5pcXVlKHRheGJ1cmRlbmRhdGEkU3ViTWVhc3VyZUlEKVxudW5pcXVlKHRheGJ1cmRlbmRhdGEkU3ViTWVhc3VyZUlkRGlzcGxheU9yZGVyKVxudW5pcXVlKHRheGJ1cmRlbmRhdGEkRGF0YV9WYWx1ZV9Vbml0KVxudW5pcXVlKHRheGJ1cmRlbmRhdGEkRGF0YV9WYWx1ZV9UeXBlKVxudW5pcXVlKHRheGJ1cmRlbmRhdGEkU291cmNlKVxudW5pcXVlKHRheGJ1cmRlbmRhdGEkVG9waWNEZXNjKVxudW5pcXVlKHRheGJ1cmRlbmRhdGEkVG9waWNUeXBlSWQpXG51bmlxdWUodGF4YnVyZGVuZGF0YSRUb3BpY0lkKVxuYGBgIn0= -->
-<pre class="r"><code>unique(taxburdendata$Year)
-unique(taxburdendata$TopicDesc)
-unique(taxburdendata$Datasource)
-unique(taxburdendata$MeasureDesc)
-unique(taxburdendata$MeasureId)
-unique(taxburdendata$SubMeasureDesc)
-unique(taxburdendata$SubMeasureID)
-unique(taxburdendata$SubMeasureIdDisplayOrder)
-unique(taxburdendata$Data_Value_Unit)
-unique(taxburdendata$Data_Value_Type)
-unique(taxburdendata$Source)
-unique(taxburdendata$TopicDesc)
-unique(taxburdendata$TopicTypeId)
-unique(taxburdendata$TopicId)</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudW5pcXVlKHRheGJ1cmRlbmRhdGEkU3ViTWVhc3VyZURlc2MpXG5cbmBgYCJ9 -->
+<pre class="r"><code>unique(taxburdendata$SubMeasureDesc)
+</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiWzFdIFwiRmVkZXJhbCBhbmQgU3RhdGUgVGF4IHBlciBwYWNrXCIgICAgICAgICAgICAgICAgICAgICAgICBcIkF2ZXJhZ2UgQ29zdCBwZXIgcGFja1wiICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBcblszXSBcIkZlZGVyYWwgYW5kIFN0YXRlIHRheCBhcyBhIFBlcmNlbnRhZ2Ugb2YgUmV0YWlsIFByaWNlXCIgXCJTdGF0ZSBUYXggcGVyIHBhY2tcIiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgXG5bNV0gXCJHcm9zcyBDaWdhcmV0dGUgVGF4IFJldmVudWVcIiAgICAgICAgICAgICAgICAgICAgICAgICAgIFwiQ2lnYXJldHRlIENvbnN1bXB0aW9uIChQYWNrIFNhbGVzIFBlciBDYXBpdGEpXCIgICAgICAgIFxuIn0= -->
+<pre><code>[1] &quot;Federal and State Tax per pack&quot;                        &quot;Average Cost per pack&quot;                                
+[3] &quot;Federal and State tax as a Percentage of Retail Price&quot; &quot;State Tax per pack&quot;                                   
+[5] &quot;Gross Cigarette Tax Revenue&quot;                           &quot;Cigarette Consumption (Pack Sales Per Capita)&quot;        </code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <!-- rnb-text-end -->

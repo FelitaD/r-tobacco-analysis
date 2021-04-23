@@ -16,6 +16,8 @@ library(tsbox)
   data <- read.csv("~/CNAM/Stats/Mini-memoire/data/data.csv")
 ```
 
+## Analyse des relations entre tabac et sante mentale au cours du temps
+
 #### Choix des variables
 
 ```{r}
@@ -28,9 +30,10 @@ library(tsbox)
     data_subset <- drop_na(data_subset) 
 ```
 
-#### Choix du type d'aggregation 
+#### Creation de Time Series 
 
-- Aggregation par jour
+- Par jour
+
 ```{r}
     agg_day <- data_subset  %>%
                     filter(IYEAR != 2020) %>%
@@ -43,20 +46,20 @@ library(tsbox)
     agg_day$IDATE <- as.Date(agg_day$IDATE, format="%Y-%m-%d")
 ```
 
-- Aggregation par mois
 ```{r}
-    agg_year <- data_subset  %>%
-                    filter(IYEAR != 2020) %>%
-                    group_by(IMONTH) %>% 
-                    summarize(ADDEPEV2 = mean(ADDEPEV2),
-                            POORHLTH = mean(POORHLTH),
-                            MENTHLTH = mean(MENTHLTH),
-                            X_RFSMOK3 = mean(X_RFSMOK3)) 
-      
-    agg_year$IYEAR <- as.Date(agg_year$IYEAR, format="%Y-%m-%d")
+  agg_day_date <- agg_day$IDATE
+  agg_day <- agg_day %>% select(-IDATE)
+  xts_day <- xts(agg_day, agg_day_date) 
+  ts <- ts_ts(xts_day)
+  print(ts)
+  plot(ts)
+  colnames(ts)
+  ts.plot(ts, col = 2:3, xlab = "Year", ylab = "Nombre de jours", main = "tobacco and mental heath")
+  legend("topleft", n[2:3], lty = 1, col = 2:3, bty = "n")
 ```
 
-- Aggregation par annee
+- Par annee
+
 ```{r}
     agg_year <- data_subset  %>%
                     filter(IYEAR != 2020) %>%
@@ -65,28 +68,9 @@ library(tsbox)
                             POORHLTH = mean(POORHLTH),
                             MENTHLTH = mean(MENTHLTH),
                             X_RFSMOK3 = mean(X_RFSMOK3)) 
-      
-    agg_year$IYEAR <- as.Date(agg_year$IYEAR, format="%Y-%m-%d")
 ```
 
-## Creation des Time Series
 
-- Par jour
-```{r}
-  data_date <- agg_day$IDATE
-  agg_day <- agg_day %>% select(-IDATE)
-  ts <- xts(agg_day, data_date) 
-  plot(ts)
-```
-
-```{r}
-  smokers_mentalhealth <- ts_ts(ts)
-  print(smokers_mentalhealth)
-  plot(smokers_mentalhealth)
-  colnames(smokers_mentalhealth)
-```
-
-- Par annee
 ```{r}
   data_date <- agg_day$IYEAR
   agg_day <- agg_day %>% select(-IDATE)
@@ -101,6 +85,14 @@ library(tsbox)
   colnames(smokers_mentalhealth)
 ```
 
+```{r}
+print(a)
+start(a)
+end(a)
+frequency(a)
+deltat(a)
+plot(a)
+```
 
 #### DIVISION EN TIMES SERIES UNIVARIES
 
@@ -144,64 +136,88 @@ lapply(poor_mental_ts_diff, var, na.rm = TRUE)
 ```
 > La comparaison de la moyenne et de la variance est quasi-identique
 
+brfss_2001$QLMENTL2
+brfss_1985$QLSTRES2
+brfss_1985$EMTSUPRT
+brfss_1985$LSATISFY
+
+brfss_2010$ADDEPEV2
 
 
 
+brfss_1985$X_STATE
+brfss_1985$NUMADULT
+brfss_1985$MARITAL
+brfss_1985$EDUCA
+brfss_1985$SEX
+brfss_1985$X_AGEG5YR
+brfss_1985$SMOKE100
 
+brfss_1995$X_STATE
+brfss_1995$NUMADULT
+brfss_1995$MENTHLTH
+brfss_1995$POORHLTH
+brfss_1995$MARITAL
+brfss_1995$EDUCA
+brfss_1995$SEX
+brfss_1995$X_AGEG5YR
+brfss_1995$X_AGE65YR
+brfss_1995$SMOKE100
 
+brfss_2000$X_STATE
+brfss_2000$NUMADULT
+brfss_2000$MENTHLTH
+brfss_2000$POORHLTH
+brfss_2000$MARITAL
+brfss_2000$EDUCA
+brfss_2000$INCOME2
+brfss_2000$SEX
+brfss_2000$X_AGEG5YR
+brfss_2000$X_AGE65YR
+brfss_2000$SMOKE100
 
+brfss_2005$X_STATE
+brfss_2005$NUMADULT
+brfss_2005$MENTHLTH
+brfss_2005$POORHLTH
+brfss_2005$MARITAL
+brfss_2005$CHILDREN
+brfss_2005$EDUCA
+brfss_2005$INCOME2
+brfss_2005$SEX
+brfss_2005$X_AGEG5YR
+brfss_2005$X_AGE65YR
+brfss_2005$X_AGE_G
+brfss_2005$X_CHLDCNT
+brfss_2005$X_EDUCAG
+brfss_2005$X_INCOMG
+brfss_2005$SMOKE100
+brfss_2005$SMOKDAY2
+brfss_2005$STOPSMK2
+brfss_2005$X_SMOKER3
+brfss_2005$X_RFSMOK3
 
+brfss_2008$X_STATE
+brfss_2008$NUMADULT
+brfss_2008$MENTHLTH
+brfss_2008$POORHLTH
+brfss_2008$MARITAL
+brfss_2008$CHILDREN
+brfss_2008$EDUCA
+brfss_2008$INCOME2
+brfss_2008$VETERAN3
+brfss_2008$SEX
+brfss_2008$X_AGEG5YR
+brfss_2008$X_AGE65YR
+brfss_2008$X_AGE_G
+brfss_2008$X_CHLDCNT
+brfss_2008$X_EDUCAG
+brfss_2008$X_INCOMG
+brfss_2008$SMOKE100
+brfss_2008$SMOKDAY2
+brfss_2008$LASTSMK2
+brfss_2008$STOPSMK2
+brfss_2008$X_SMOKER3
+brfss_2008$X_RFSMOK3
 
-
-
-
-
-
-
-
-
-
-```{r}
-    d <- select(data, IYEAR, X_RFSMOK3, ADDEPEV2, POORHLTH, MENTHLTH)
-    # Creation d'une variable contenant une valeur unique
-    e <- d  %>%
-      mutate(X_RFSMOK3 = ifelse(X_RFSMOK3 == "true", 1, 0)) 
-    e <- drop_na(e)
-    f <- e %>%
-    filter(IYEAR != 2020) %>%
-    group_by(IYEAR) %>% 
-    summarize(ADDEPEV2 = sum(ADDEPEV2),
-              POORHLTH = mean(POORHLTH),
-              MENTHLTH = mean(MENTHLTH),
-              X_RFSMOK3 = sum(X_RFSMOK3))
-```
-
-```{r}
-  data_date <- agg_day$IDATE
-  agg_day <- agg_day %>% select(-IDATE)
-  ts <- xts(data, agg_day) 
-  plot(ts)
-  a <- xts(f)
-
-```
-
-```{r}
-print(a)
-start(a)
-end(a)
-frequency(a)
-deltat(a)
-plot(a)
-```
-
-```{r}
-n <- colnames(a)
-```
-
-```{r}
-  ts.plot(a, col = 2:3, xlab = "Year", ylab = "Nombre de jours", main = "tobacco and mental heath")
-
-# Add a legend to your ts.plot
-  legend("topleft", n[2:3], lty = 1, col = 2:3, bty = "n")
-```
 

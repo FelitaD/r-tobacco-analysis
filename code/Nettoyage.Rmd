@@ -10,9 +10,40 @@ library(naniar)
 library(tidyverse)
 ```
 
-## MERGE, RENAME, SELECT RELEVANT COLUMNS
+## LOAD, RENAME and SELECT RELEVANT COLUMNS
 
 ```{r}
+brfss_1985 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS85.XPT")
+brfss_1986 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS86.XPT")
+brfss_1987 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS87.XPT")
+brfss_1988 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS88.XPT")
+brfss_1989 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS89.XPT")
+
+brfss_1990 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS90.XPT")
+brfss_1991 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS91.XPT")
+brfss_1992 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS92.XPT")
+brfss_1993 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS93.XPT")
+brfss_1994 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS94.XPT")
+brfss_1995 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS95.XPT")
+brfss_1996 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS96.XPT")
+brfss_1997 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS97.XPT")
+brfss_1998 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS98.XPT")
+brfss_1999 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS99.XPT")
+
+brfss_2000 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS00.XPT")
+brfss_2001 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS01.XPT")
+brfss_2002 <- read.xport("~/CNAM/Stats/Mini-memoire/data/cdbrfs02.XPT")
+brfss_2003 <- read.xport("~/CNAM/Stats/Mini-memoire/data/cdbrfs03.XPT")
+brfss_2004 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS04.XPT")
+brfss_2005 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS05.XPT")
+brfss_2006 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS06.XPT")
+brfss_2007 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS07.XPT")
+brfss_2008 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS08.XPT")
+brfss_2009 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS09.XPT")
+
+brfss_2010 <- read.xport("~/CNAM/Stats/Mini-memoire/data/CDBRFS10.XPT")
+brfss_2011 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2011.XPT")
+brfss_2012 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2012.XPT")
 brfss_2013 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2013.XPT")
 brfss_2014 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2014.XPT")
 brfss_2015 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2015.XPT")
@@ -23,167 +54,139 @@ brfss_2019 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2019.XPT")
 ```
 
 ```{r}
-names(brfss_2013)[names(brfss_2013) == "iyear"] <- "IYEAR"
-names(brfss_2013)[names(brfss_2013) == "X_state"] <- "X_STATE"
-names(brfss_2013)[names(brfss_2013) == "numadult"] <- "NUMADULT"
-names(brfss_2013)[names(brfss_2013) == "menthlth"] <- "MENTHLTH"
-names(brfss_2013)[names(brfss_2013) == "poorhlth"] <- "POORHLTH"
-names(brfss_2013)[names(brfss_2013) == "marital"] <- "MARITAL"
-names(brfss_2013)[names(brfss_2013) == "children"] <- "CHILDREN"
-names(brfss_2013)[names(brfss_2013) == "educa"] <- "EDUCA"
-names(brfss_2013)[names(brfss_2013) == "employ1"] <- "EMPLOY1"
-names(brfss_2013)[names(brfss_2013) == "income2"] <- "INCOME2"
-names(brfss_2013)[names(brfss_2013) == "veteran3"] <- "VETERAN3"
-names(brfss_2013)[names(brfss_2013) == "renthom1"] <- "RENTHOM1"
-names(brfss_2013)[names(brfss_2013) == "sex"] <- "SEX"
-names(brfss_2013)[names(brfss_2013) == "pregnant"] <- "PREGNANT"
-names(brfss_2013)[names(brfss_2013) == "X_ageg5yr"] <- "X_AGEG5YR"
-names(brfss_2013)[names(brfss_2013) == "X_age65yr"] <- "X_AGE65YR"
-names(brfss_2013)[names(brfss_2013) == "X_age_g"] <- "X_AGE_G"
-names(brfss_2013)[names(brfss_2013) == "X_chldcnt"] <- "X_CHLDCNT"
-names(brfss_2013)[names(brfss_2013) == "X_educag"] <- "X_EDUCAG"
-names(brfss_2013)[names(brfss_2013) == "X_incomg"] <- "X_INCOMG"
-names(brfss_2013)[names(brfss_2013) == "smoke100"] <- "SMOKE100"
-names(brfss_2013)[names(brfss_2013) == "smokday2"] <- "SMOKDAY2"
-names(brfss_2013)[names(brfss_2013) == "lastsmk2"] <- "LASTSMK2"
-names(brfss_2013)[names(brfss_2013) == "stopsmk2"] <- "STOPSMK2"
-names(brfss_2013)[names(brfss_2013) == "usenow3"] <- "USENOW3"
-names(brfss_2013)[names(brfss_2013) == "X_smoker3"] <- "X_SMOKER3"
-names(brfss_2013)[names(brfss_2013) == "X_rfsmok3"] <- "X_RFSMOK3"
-names(brfss_2013)[names(brfss_2013) == "qlmentl2"] <- "QLMENTL2"
-names(brfss_2013)[names(brfss_2013) == "qlstres2"] <- "QLSTRES2"
-names(brfss_2013)[names(brfss_2013) == "emtsuprt"] <- "EMTSUPRT"
-names(brfss_2013)[names(brfss_2013) == "addepev2"] <- "ADDEPEV2"
-
 names(brfss_2018)[names(brfss_2018) == "SEX1"] <- "SEX"
-
 names(brfss_2019)[names(brfss_2019) == "SEXVAR"] <- "SEX"
 names(brfss_2019)[names(brfss_2019) == "ADDEPEV3"] <- "ADDEPEV2"
 ```
 
 ```{r}
-cols <- c("IYEAR", "IMONTH", "IDAY", "X_STATE", "NUMADULT", 
-                                          "MENTHLTH", "POORHLTH", "MARITAL", 
-                                          "CHILDREN", "EDUCA", "EMPLOY1",
-                                          "INCOME2", "VETERAN3", "RENTHOM1",
-                                          "SEX", "PREGNANT", "X_AGEG5YR",
-                                          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
-                                          "X_EDUCAG", "X_INCOMG", "SMOKE100",
-                                          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
-                                         "USENOW3", "X_SMOKER3", "X_RFSMOK3",
-                                         "QLMENTL2", "QLSTRES2", "EMTSUPRT",
-                                         "LSATISFY", "ADDEPEV2")
-```
+cols_2018_2019 <- c("IYEAR", "IDAY", "IMONTH", "X_STATE", "NUMADULT", 
+          "MENTHLTH", "POORHLTH", "MARITAL", 
+          "CHILDREN", "EDUCA", "EMPLOY1",
+          "INCOME2", "VETERAN3", "RENTHOM1",
+          "SEX", "PREGNANT", "X_AGEG5YR",
+          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
+          "X_EDUCAG", "X_INCOMG", "SMOKE100",
+          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
+         "USENOW3", "X_SMOKER3", "X_RFSMOK3", "ADDEPEV2")
 
 
-```{r}
-data2013 <- subset(brfss_2013, select=c("IYEAR", "IMONTH", "IDAY", "X_STATE", "NUMADULT", 
-                                          "MENTHLTH", "POORHLTH", "MARITAL", 
-                                          "CHILDREN", "EDUCA", "EMPLOY1",
-                                          "INCOME2", "VETERAN3", "RENTHOM1",
-                                          "SEX", "PREGNANT", "X_AGEG5YR",
-                                          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
-                                          "X_EDUCAG", "X_INCOMG", "SMOKE100",
-                                          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
-                                         "USENOW3", "X_SMOKER3", "X_RFSMOK3",
-                                         "QLMENTL2", "QLSTRES2", "EMTSUPRT",
-                                         "LSATISFY", "ADDEPEV2"))
-```
+cols_1985_1990 <- c("IYEAR", "IDATE", "IMONTH", "X_STATE", "NUMADULT",
+                "MARITAL", "EDUCA", "SEX", "X_AGEG5YR",
+                "SMOKE100")
 
-```{r}
-data2014 <- subset(brfss_2014, select=c("IYEAR", "IMONTH", "IDAY", "X_STATE", "NUMADULT", 
-                                          "MENTHLTH", "POORHLTH", "MARITAL", 
-                                          "CHILDREN", "EDUCA", "EMPLOY1",
-                                          "INCOME2", "VETERAN3", "RENTHOM1",
-                                          "SEX", "PREGNANT", "X_AGEG5YR",
-                                          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
-                                          "X_EDUCAG", "X_INCOMG", "SMOKE100",
-                                          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
-                                         "USENOW3", "X_SMOKER3", "X_RFSMOK3",
-                                         "QLMENTL2", "QLSTRES2", "EMTSUPRT",
-                                         "LSATISFY", "ADDEPEV2"))
-```
+cols_1991_1995 <- c("IYEAR", "IDAY", "IMONTH", "X_STATE", "NUMADULT",
+                "MARITAL", "EDUCA", "SEX", "X_AGEG5YR",
+                "SMOKE100", "X_AGE65YR")
 
-```{r}
-data2015 <- subset(brfss_2015, select=c("IYEAR", "IMONTH", "IDAY",  "X_STATE", "NUMADULT", 
-                                          "MENTHLTH", "POORHLTH", "MARITAL", 
-                                          "CHILDREN", "EDUCA", "EMPLOY1",
-                                          "INCOME2", "VETERAN3", "RENTHOM1",
-                                          "SEX", "PREGNANT", "X_AGEG5YR",
-                                          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
-                                          "X_EDUCAG", "X_INCOMG", "SMOKE100",
-                                          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
-                                         "USENOW3", "X_SMOKER3", "X_RFSMOK3",
-                                         "QLMENTL2", "QLSTRES2", "EMTSUPRT",
-                                         "LSATISFY", "ADDEPEV2"))
-```
+cols_1996_2000 <- c("IYEAR", "IDAY", "X_STATE", "IMONTH", "NUMADULT",
+                "MARITAL", "EDUCA", "SEX", "X_AGEG5YR",
+                "SMOKE100", "MENTHLTH", "POORHLTH",
+                "EDUCA", "X_AGE65YR", "INCOME2")
 
-```{r}
-data2016 <- subset(brfss_2016, select=c("IYEAR", "IMONTH", "IDAY",  "X_STATE", "NUMADULT", 
-                                          "MENTHLTH", "POORHLTH", "MARITAL", 
-                                          "CHILDREN", "EDUCA", "EMPLOY1",
-                                          "INCOME2", "VETERAN3", "RENTHOM1",
-                                          "SEX", "PREGNANT", "X_AGEG5YR",
-                                          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
-                                          "X_EDUCAG", "X_INCOMG", "SMOKE100",
-                                          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
-                                         "USENOW3", "X_SMOKER3", "X_RFSMOK3",
-                                         "QLMENTL2", "QLSTRES2", "EMTSUPRT",
-                                         "LSATISFY", "ADDEPEV2"))
+cols_2001_2004 <- c("IYEAR", "IDAY", "X_STATE", "IMONTH", "NUMADULT",
+                "MARITAL", "EDUCA", "SEX", "X_AGEG5YR",
+                "SMOKE100", "MENTHLTH", "POORHLTH",
+                "EDUCA", "INCOME2", "CHILDREN")
+
+cols_2005_2009 <- c("IYEAR", "IDAY", "X_STATE", "IMONTH", "NUMADULT",
+                "MARITAL", "EDUCA", "SEX", "X_AGEG5YR",
+                "SMOKE100", "MENTHLTH", "POORHLTH",
+                "EDUCA", "INCOME2", "CHILDREN", 
+                "QLMENTL2", "QLSTRES2", "EMTSUPRT",
+                "LSATISFY",
+                "X_AGE_G", "X_CHLDCNT", "X_EDUCAG",
+                "X_EDUCAG", "X_INCOMG", "SMOKDAY2",
+                "STOPSMK2", "X_RFSMOK3", "X_SMOKER3")
+
+cols_2010_2012 <- c("IYEAR", "IDAY", "X_STATE", "IMONTH", "NUMADULT",
+                "MARITAL", "EDUCA", "SEX", "X_AGEG5YR",
+                "SMOKE100", "MENTHLTH", "POORHLTH",
+                "EDUCA", "INCOME2", "CHILDREN", 
+                "QLMENTL2", "QLSTRES2", "EMTSUPRT",
+                "LSATISFY",
+                "X_AGE_G", "X_CHLDCNT",
+                "X_EDUCAG", "X_INCOMG", "SMOKDAY2",
+                "STOPSMK2", "X_RFSMOK3", "X_SMOKER3",
+                "LASTSMK2", "ADDEPEV2", 
+                "RENTHOM1", "USENOW3")
+
+cols_2013_2018 <- c("IYEAR", "IDAY", "IMONTH", "X_STATE", "NUMADULT", 
+          "MENTHLTH", "POORHLTH", "MARITAL", 
+          "CHILDREN", "EDUCA", "EMPLOY1",
+          "INCOME2", "RENTHOM1",
+          "SEX", "X_AGEG5YR",
+          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
+          "X_EDUCAG", "X_INCOMG", "SMOKE100",
+          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
+         "USENOW3", "X_SMOKER3", "X_RFSMOK3",
+         "QLMENTL2", "QLSTRES2", "EMTSUPRT",
+         "LSATISFY", "ADDEPEV2")
 ```
 
 ```{r}
-data2017 <- subset(brfss_2017, select=c("IYEAR",  "IMONTH", "IDAY", "X_STATE", "NUMADULT", 
-                                          "MENTHLTH", "POORHLTH", "MARITAL", 
-                                          "CHILDREN", "EDUCA", "EMPLOY1",
-                                          "INCOME2", "VETERAN3", "RENTHOM1",
-                                          "SEX", "PREGNANT", "X_AGEG5YR",
-                                          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
-                                          "X_EDUCAG", "X_INCOMG", "SMOKE100",
-                                          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
-                                         "USENOW3", "X_SMOKER3", "X_RFSMOK3",
-                                         "QLMENTL2", "QLSTRES2", "EMTSUPRT",
-                                         "LSATISFY", "ADDEPEV2"))
+data_1985 <- brfss_1985[, cols_1985_1990]
+data_1986 <- brfss_1986[, cols_1985_1990]
+data_1987 <- brfss_1987[, cols_1985_1990]
+data_1988 <- brfss_1988[, cols_1985_1990]
+data_1989 <- brfss_1989[, cols_1985_1990]
+data_1990 <- brfss_1990[, cols_1985_1990]
+
+data_1991 <- brfss_1991[, cols_1991_1995]
+data_1992 <- brfss_1992[, cols_1991_1995]
+data_1993 <- brfss_1993[, cols_1991_1995]
+data_1994 <- brfss_1994[, cols_1991_1995]
+data_1995 <- brfss_1995[, cols_1991_1995]
+
+data_1996 <- brfss_1996[, cols_1996_2000]
+data_1997 <- brfss_1997[, cols_1996_2000]
+data_1998 <- brfss_1998[, cols_1996_2000]
+data_1999 <- brfss_1999[, cols_1996_2000]
+data_2000 <- brfss_2000[, cols_1996_2000]
+
+data_2001 <- brfss_2001[, cols_2001_2004]
+data_2002 <- brfss_2002[, cols_2001_2004]
+data_2003 <- brfss_2003[, cols_2001_2004]
+data_2004 <- brfss_2004[, cols_2001_2004]
+
+data_2005 <- brfss_2005[, cols_2005_2009]
+data_2006 <- brfss_2006[, cols_2005_2009]
+data_2007 <- brfss_2007[, cols_2005_2009]
+data_2008 <- brfss_2008[, cols_2005_2009]
+data_2009 <- brfss_2009[, cols_2005_2009]
+
+data_2010 <- brfss_2011[, cols_2010_2012]
+data_2011 <- brfss_2011[, cols_2010_2012]
+data_2012 <- brfss_2012[, cols_2010_2012]
+
+data_2013 <- brfss_2013[, cols_2010_2018]
+data_2014 <- brfss_2014[, cols_2010_2018]
+data_2015 <- brfss_2015[, cols_2010_2018]
+data_2016 <- brfss_2016[, cols_2010_2018]
+data_2017 <- brfss_2017[, cols_2010_2018]
+data_2018 <- brfss_2018[, cols_2018_2019]
+data_2019 <- brfss_2019[, cols_2018_2019]
 ```
 
 ```{r}
-data2018 <- subset(brfss_2018, select=c("IYEAR",  "IMONTH", "IDAY", "X_STATE", "NUMADULT", 
-                                          "MENTHLTH", "POORHLTH", "MARITAL", 
-                                          "CHILDREN", "EDUCA", "EMPLOY1",
-                                          "INCOME2", "VETERAN3", "RENTHOM1",
-                                          "SEX", "PREGNANT", "X_AGEG5YR",
-                                          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
-                                          "X_EDUCAG", "X_INCOMG", "SMOKE100",
-                                          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
-                                         "USENOW3", "X_SMOKER3", "X_RFSMOK3","ADDEPEV2"))
-```
+data_1985_1990 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data_1985, data_1986, data_1987, data_1988, data_1989, data_1990))
 
-```{r}
-data2019 <- subset(brfss_2019, select=c("IYEAR","IMONTH", "IDAY", "X_STATE", "NUMADULT", 
-                                          "MENTHLTH", "POORHLTH", "MARITAL", 
-                                          "CHILDREN", "EDUCA", "EMPLOY1",
-                                          "INCOME2", "VETERAN3", "RENTHOM1",
-                                          "SEX", "PREGNANT", "X_AGEG5YR",
-                                          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
-                                          "X_EDUCAG", "X_INCOMG", "SMOKE100",
-                                          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
-                                          "USENOW3", "X_SMOKER3", "X_RFSMOK3", "ADDEPEV2"))
-```
+data_1991_2000 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data_1991, data_1992, data_1993, data_1994, data_1995, data_1996, data_1997, data_1998, data_1999, data_2000))
 
-```{r}
-data_2013_2014 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data2013, data2014))
-data_2015_2016 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data2015, data2016))
+data_2001_2010 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data_2001, data_2002, data_200, data_2001, data_2001, data_2001, data_2001, data_2001, data_2001, data_2001))
+
+
 data_2013_2016 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data_2013_2014, data_2015_2016))
 data_2013_2017 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data_2013_2016, data2017))
 data_2013_2019 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data_2013_2017, data2018, data2019))
 ```
 
 ```{r}
-write.csv(data_2013_2019, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_2013_2019_months.csv',sep = ''))
+write.csv(data_2013_2019, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_2013_2019.csv',sep = ''))
 ```
 
 ```{r}
-data_2013_2019 <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_2013_2019_months.csv")
+data_2013_2019 <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_2013_2019.csv")
 ```
 
 ```{r}
