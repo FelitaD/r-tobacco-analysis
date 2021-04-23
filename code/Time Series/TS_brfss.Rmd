@@ -2,7 +2,8 @@
 title: "R Notebook"
 output: html_notebook
 ---
-```{r}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(scales)
 library(reshape2)
@@ -13,9 +14,14 @@ library(tsbox)
 ```
 
 ```{r}
-  data <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_1985_2019_cleaned")
+  data_1985_2019 <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_1985_2019_cleaned.csv")
   data <- data_1985_2019
 ```
+
+```{r}
+poorhtlth_mentlth_smoke100$POORHLTH[poorhtlth_mentlth_smoke100$IYEAR  == 2011] 
+```
+
 
 ## Analyse des relations entre tabac et sante mentale au cours du temps
 POORHLTH, MENTHLTH, SMOKE100 -> 1996 - 2019
@@ -23,21 +29,21 @@ POORHLTH, MENTHLTH, SMOKE100 -> 1996 - 2019
 #### Choix des variables
 
 ```{r}
-    poorhtlth_mentlth_smoke100 <- data %>%
+    poorhtlth_mentlth_smoke100 <- data_1985_2019 %>%
       select(IDATE, IYEAR,  SMOKE100 , POORHLTH, MENTHLTH)
-
-    poorhtlth_mentlth_smoke100 <- drop_na(poorhtlth_mentlth_smoke100) 
 ```
 
 #### Aggregation par annee
 
 ```{r}
     agg_day <- poorhtlth_mentlth_smoke100  %>%
-                    filter(IYEAR != 2020) %>%
                     group_by(IDATE) %>% 
                     summarise(POORHLTH = mean(POORHLTH),
                             MENTHLTH = mean(MENTHLTH),
                             SMOKE100 = mean(SMOKE100)) 
+
+                    select(IDATE, IYEAR,  SMOKE100 , POORHLTH, MENTHLTH) %>%
+                    filter(IYEAR != 2020) %>%
 ```
 
 #### Creation de times series
