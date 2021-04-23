@@ -34,16 +34,14 @@ shinyServer(function(input, output) {
     
     f$Group.1 <- as.Date(ISOdate(f$Group.1, 1, 1))
     
-    t <- xts(order.by=f$Group.1, f$new) 
-    t <- t[-c(nrow(t)),] 
-    # colnames(t) <-!!as.symbol(input$field)
+    # t <- xts(order.by=f$Group.1, f$new) 
+    # t <- t[-c(nrow(t)),] 
+    # # colnames(t) <-!!as.symbol(input$field)
+    # plot(t)    
     
-    
-    ggplot(t) + 
+    ggplot(t) +
       geom_line(aes(x=f$Group.1, y = f$new), colour = f$new)
     
-    
-
   # output$plot <- renderPlot({
   #   ggplot(subset(data, !is.na(input$field2)), aes(x = !!as.symbol(input$field), fill = !!as.symbol(input$field2))) + 
   #            geom_bar(position = "fill") +

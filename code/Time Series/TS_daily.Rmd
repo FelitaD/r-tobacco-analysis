@@ -1,0 +1,106 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+library(scales)
+library("reshape2")
+library("ggplot2")
+library(xts)
+library(zoo)
+```
+
+```{r}
+methods(class="zoo")
+```
+
+
+```{r}
+  data <- read.csv("~/CNAM/Stats/Mini-memoire/data/data.csv")
+```
+
+
+```{r}
+    data_subset <- select(data, IDATE, X_RFSMOK3, ADDEPEV2, POORHLTH, MENTHLTH)
+    data_subset <- data_subset[!is.na(data_subset$IDATE), ]
+
+    data_subset <- data_subset  %>%
+                    mutate(X_RFSMOK3 = ifelse(X_RFSMOK3 == "true", 1, 0)) 
+    
+    data_subset_drop <- drop_na(data_subset) 
+    
+    data_subset_agg_day <- data_subset_drop  %>%
+                    group_by(IDATE) %>% 
+                    summarize(ADDEPEV2 = mean(ADDEPEV2),
+                            POORHLTH = mean(POORHLTH),
+                            MENTHLTH = mean(MENTHLTH),
+                            X_RFSMOK3 = mean(X_RFSMOK3))
+      
+    data_subset_agg_day$IDATE <- as.Date(data_subset_agg_day$IDATE, format="%Y-%m-%d")
+```
+
+```{r}
+
+```
+
+```{r}
+  data_date <- data_subset_agg_day$IDATE
+  unique(data_subset_agg_day)
+```
+
+```{r}
+  ts <- zoo(data_subset_agg_day, data_date)
+```
+
+```{r}
+  start(ts)
+  end(ts)
+```
+
+
+```{r}
+w <- as.ts(data)
+print(w)
+```
+
+
+```{r}
+    d <- select(data, IDATE, X_RFSMOK3, ADDEPEV2, POORHLTH, MENTHLTH)
+    # Creation d'une variable contenant une valeur unique
+    e <- d  %>%
+      mutate(X_RFSMOK3 = ifelse(X_RFSMOK3 == "true", 1, 0)) 
+    e <- drop_na(e)
+    f <- e %>%
+    group_by(IDATE) %>% 
+    summarize(ADDEPEV2 = sum(ADDEPEV2),
+              POORHLTH = mean(POORHLTH),
+              MENTHLTH = mean(MENTHLTH),
+              X_RFSMOK3 = sum(X_RFSMOK3))
+```
+
+```{r}
+  a <- read.zoo(f, format ="%Y-%m-%d")
+
+```
+
+```{r}
+print(a)
+start(a)
+end(a)
+frequency(a)
+deltat(a)
+plot(a)
+```
+
+```{r}
+n <- colnames(a)
+```
+
+```{r}
+  ts.plot(a, col = 2:3, xlab = "Year", ylab = "Nombre de jours", main = "tobacco and mental heath")
+
+# Add a legend to your ts.plot
+  legend("topleft", n[2:3], lty = 1, col = 2:3, bty = "n")
+```
+

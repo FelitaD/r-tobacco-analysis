@@ -13,13 +13,13 @@ library(tidyverse)
 ## MERGE, RENAME, SELECT RELEVANT COLUMNS
 
 ```{r}
-brfss_2013 <- read.xport("data/LLCP2013.XPT")
-brfss_2014 <- read.xport("data/LLCP2014.XPT")
-brfss_2015 <- read.xport("data/LLCP2015.XPT")
-brfss_2016 <- read.xport("data/LLCP2016.XPT")
-brfss_2017 <- read.xport("data/LLCP2017.XPT")
-brfss_2018 <- read.xport("data/LLCP2018.XPT")
-brfss_2019 <- read.xport("data/LLCP2019.XPT")
+brfss_2013 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2013.XPT")
+brfss_2014 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2014.XPT")
+brfss_2015 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2015.XPT")
+brfss_2016 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2016.XPT")
+brfss_2017 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2017.XPT")
+brfss_2018 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2018.XPT")
+brfss_2019 <- read.xport("~/CNAM/Stats/Mini-memoire/data/LLCP2019.XPT")
 ```
 
 ```{r}
@@ -62,7 +62,22 @@ names(brfss_2019)[names(brfss_2019) == "ADDEPEV3"] <- "ADDEPEV2"
 ```
 
 ```{r}
-data2013 <- subset(brfss_2013, select=c("IYEAR", "X_STATE", "NUMADULT", 
+cols <- c("IYEAR", "IMONTH", "IDAY", "X_STATE", "NUMADULT", 
+                                          "MENTHLTH", "POORHLTH", "MARITAL", 
+                                          "CHILDREN", "EDUCA", "EMPLOY1",
+                                          "INCOME2", "VETERAN3", "RENTHOM1",
+                                          "SEX", "PREGNANT", "X_AGEG5YR",
+                                          "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
+                                          "X_EDUCAG", "X_INCOMG", "SMOKE100",
+                                          "SMOKDAY2", "LASTSMK2", "STOPSMK2",
+                                         "USENOW3", "X_SMOKER3", "X_RFSMOK3",
+                                         "QLMENTL2", "QLSTRES2", "EMTSUPRT",
+                                         "LSATISFY", "ADDEPEV2")
+```
+
+
+```{r}
+data2013 <- subset(brfss_2013, select=c("IYEAR", "IMONTH", "IDAY", "X_STATE", "NUMADULT", 
                                           "MENTHLTH", "POORHLTH", "MARITAL", 
                                           "CHILDREN", "EDUCA", "EMPLOY1",
                                           "INCOME2", "VETERAN3", "RENTHOM1",
@@ -76,7 +91,7 @@ data2013 <- subset(brfss_2013, select=c("IYEAR", "X_STATE", "NUMADULT",
 ```
 
 ```{r}
-data2014 <- subset(brfss_2014, select=c("IYEAR", "X_STATE", "NUMADULT", 
+data2014 <- subset(brfss_2014, select=c("IYEAR", "IMONTH", "IDAY", "X_STATE", "NUMADULT", 
                                           "MENTHLTH", "POORHLTH", "MARITAL", 
                                           "CHILDREN", "EDUCA", "EMPLOY1",
                                           "INCOME2", "VETERAN3", "RENTHOM1",
@@ -90,7 +105,7 @@ data2014 <- subset(brfss_2014, select=c("IYEAR", "X_STATE", "NUMADULT",
 ```
 
 ```{r}
-data2015 <- subset(brfss_2015, select=c("IYEAR", "X_STATE", "NUMADULT", 
+data2015 <- subset(brfss_2015, select=c("IYEAR", "IMONTH", "IDAY",  "X_STATE", "NUMADULT", 
                                           "MENTHLTH", "POORHLTH", "MARITAL", 
                                           "CHILDREN", "EDUCA", "EMPLOY1",
                                           "INCOME2", "VETERAN3", "RENTHOM1",
@@ -104,7 +119,7 @@ data2015 <- subset(brfss_2015, select=c("IYEAR", "X_STATE", "NUMADULT",
 ```
 
 ```{r}
-data2016 <- subset(brfss_2016, select=c("IYEAR", "X_STATE", "NUMADULT", 
+data2016 <- subset(brfss_2016, select=c("IYEAR", "IMONTH", "IDAY",  "X_STATE", "NUMADULT", 
                                           "MENTHLTH", "POORHLTH", "MARITAL", 
                                           "CHILDREN", "EDUCA", "EMPLOY1",
                                           "INCOME2", "VETERAN3", "RENTHOM1",
@@ -118,7 +133,7 @@ data2016 <- subset(brfss_2016, select=c("IYEAR", "X_STATE", "NUMADULT",
 ```
 
 ```{r}
-data2017 <- subset(brfss_2017, select=c("IYEAR", "X_STATE", "NUMADULT", 
+data2017 <- subset(brfss_2017, select=c("IYEAR",  "IMONTH", "IDAY", "X_STATE", "NUMADULT", 
                                           "MENTHLTH", "POORHLTH", "MARITAL", 
                                           "CHILDREN", "EDUCA", "EMPLOY1",
                                           "INCOME2", "VETERAN3", "RENTHOM1",
@@ -132,7 +147,7 @@ data2017 <- subset(brfss_2017, select=c("IYEAR", "X_STATE", "NUMADULT",
 ```
 
 ```{r}
-data2018 <- subset(brfss_2018, select=c("IYEAR", "X_STATE", "NUMADULT", 
+data2018 <- subset(brfss_2018, select=c("IYEAR",  "IMONTH", "IDAY", "X_STATE", "NUMADULT", 
                                           "MENTHLTH", "POORHLTH", "MARITAL", 
                                           "CHILDREN", "EDUCA", "EMPLOY1",
                                           "INCOME2", "VETERAN3", "RENTHOM1",
@@ -140,12 +155,11 @@ data2018 <- subset(brfss_2018, select=c("IYEAR", "X_STATE", "NUMADULT",
                                           "X_AGE65YR", "X_AGE_G", "X_CHLDCNT",
                                           "X_EDUCAG", "X_INCOMG", "SMOKE100",
                                           "SMOKDAY2", "LASTSMK2", "STOPSMK2",
-                                          "USENOW3", "X_SMOKER3", "X_RFSMOK3",
-                                          "ADDEPEV2"))
+                                         "USENOW3", "X_SMOKER3", "X_RFSMOK3","ADDEPEV2"))
 ```
 
 ```{r}
-data2019 <- subset(brfss_2019, select=c("IYEAR", "X_STATE", "NUMADULT", 
+data2019 <- subset(brfss_2019, select=c("IYEAR","IMONTH", "IDAY", "X_STATE", "NUMADULT", 
                                           "MENTHLTH", "POORHLTH", "MARITAL", 
                                           "CHILDREN", "EDUCA", "EMPLOY1",
                                           "INCOME2", "VETERAN3", "RENTHOM1",
@@ -165,11 +179,11 @@ data_2013_2019 <- Reduce(function(x, y) merge(x, y, all=TRUE), list(data_2013_20
 ```
 
 ```{r}
-write.csv(data_2013_2019, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_2013_2019.csv',sep = ''))
+write.csv(data_2013_2019, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_2013_2019_months.csv',sep = ''))
 ```
 
 ```{r}
-data_2013_2019 <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_2013_2019.csv")
+data_2013_2019 <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_2013_2019_months.csv")
 ```
 
 ```{r}
@@ -334,10 +348,15 @@ data$ADDEPEV2_FACTOR = cut(data$ADDEPEV2, 2, labels=c("false", 'true'))
 
 ```
 
+```{r}
+data$IDATE <- paste(data$IYEAR, data$IMONTH, data$IDAY, sep='-')
+data$IDATE <- as.Date(data$IDATE, format="%Y-%m-%d")
+```
+
 # ORDRE COLONNES et EXPORTATION
 
 ```{r}
-data <- data[, c("X_STATE", "IYEAR", "SEX", "X_AGEG5YR",
+data <- data[, c("IDATE", "IYEAR", "X_STATE", "SEX", "X_AGEG5YR",
                   "X_AGE65YR", "X_AGE_G", "MARITAL", "PREGNANT", 
                   "NUMADULT", "CHILDREN", "X_CHLDCNT", 
                   "EDUCA", "X_EDUCAG", "EMPLOY1", 
