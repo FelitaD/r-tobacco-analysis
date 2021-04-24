@@ -18,19 +18,16 @@ library(tsbox)
   data <- data_1985_2019
 ```
 
-## Analyse des relations entre tabac et sante mentale au cours du temps
-POORHLTH, MENTHLTH, SMOKE100 -> 1996 - 2019
+## SMOKE100, POORHLTH, MENTHLTH de 1996 a 2019
 
 #### Choix des variables
-
 ```{r}
     PMS <- data %>%
       select(IDATE, IYEAR,  SMOKE100 , POORHLTH, MENTHLTH)
     PMS <- drop_na(PMS) # on veut qu'un individu ait repondu a toutes les questions
-
 ```
 
-#### Aggregation par date
+#### Aggregation par date 
 
 ```{r}
     PMS_mean <- PMS  %>%
@@ -40,86 +37,48 @@ POORHLTH, MENTHLTH, SMOKE100 -> 1996 - 2019
                             MENTHLTH = mean(MENTHLTH),
                             SMOKE100 = mean(SMOKE100),
                             DATE = first(IDATE))
-
 ```
 
-#### Creation de times series tpe xts
+#### Creation de times series type xts
+
+- Visualisation des donnees originales
+```{r}
+  PMS_date <- as.Date(PMS_mean$DATE, format = "%Y-%m-%d")
+  PMS_cols <- select(PMS_mean, SMOKE100, POORHLTH, MENTHLTH)
+  PMS_xts <- xts(PMS_cols, order.by=PMS_date)
+  plot(PMS_xts)
+```
+
+- Remplacement des donnees de 2010 par interpolation lineaire
 
 ```{r}
-  agg_day_date <- as.Date(PMS_mean$DATE, format="%Y-%m-%d")
-  agg_day_cols <- select(PMS_mean, SMOKE100, POORHLTH, MENTHLTH)
-  xts_day <- xts(agg_day_cols, order.by=agg_day_date) 
-  print(xts_day)
-  plot(xts_day)
-  nyears(xts_day)
-  str(xts_day)
-  xts_day <- split(xts_day,f="years") # split by years
+original_df <-PMS_mean[!startsWith(PMS_mean$IDATE,"2010"),]
+times.init <- as.Date(original_df$DATE, format = "%Y-%m-%d")
+new_df <-xts(original_df[,2:4],times.init)
 
-  
+PMS_xts_interpol <- na.approx(new_df, xout=seq(min(times.init), max(times.init), "day"))
+ts.plot(PMS_xts_interpol)
 
-  ts.plot(xts_day, col = 2:3, xlab = "Year", ylab = "Nombre de jours", main = "tobacco and mental heath")
-  legend("topleft", n[2:3], lty = 1, col = 2:3, bty = "n")
+PMS_ts_interpol <- ts_ts(PMS_xts_interpol)
+ts_ggplot(PMS_xts_interpol, title="Evolution de la santé mentale des répondants", subtitle="Fumeurs et non fumeurs") +
+  theme_tsbox() +
+  scale_color_tsbox() # ts_ggplot marche aussi avec xts
 ```
-# scale
 
-#### Creation de times series tpe ts
+## Visualisation multivariee
+
+### Correlation
+
+- POORHLTH, MENTHLTH : Nombre de jours
+- SMOKE100 : 0 1
 
 ```{r}
-  ts <- ts_ts(xts_day)
-```
 
-```{r}
-  print(ts)
-  plot(xts_day)
-  colnames(ts)
-  print(a)
-  start(a)
-  end(a)
-  frequency(a)
-  deltat(a)
-  plot(a)
 ```
 
 
 
-#### DIVISION EN TIMES SERIES UNIVARIES
 
-```{r}
-  smokers_ts <- smokers_mentalhealth[, 'X_RFSMOK3']
-  depress_ts <- smokers_mentalhealth[, 'ADDEPEV2']
-  poor_phys_mental_ts <- smokers_mentalhealth[, 'POORHLTH']
-  poor_mental_ts <- smokers_mentalhealth[, 'MENTHLTH']
-  ts.plot(smokers_ts)
-  ts.plot(depress_ts)
-  ts.plot(poor_phys_mental_ts)
-  ts.plot(poor_mental_ts)
-```
 
- <!-- Ressemble a du white noise : mean and variance constante, pas de correlations over time (pas de seasonal trends) -->
- <!-- Bemol quand meme perdiodicite cycle d'un an (du au fetes moins d'interviews)  -->
 
-## WHITE NOISE MODEL - POOR MENTAL HEALTH
 
-```{r}
-ts.plot(poor_mental_ts)
-poor_mental_ts_diff <- diff(poor_mental_ts, lag = 4) # remove long term (seasonal) trends
-ts.plot(poor_mental_ts_diff)
-```
-
-Base pour d'autres modeles de time series
-
-ARIMA(p, d, q)
-- auto-regressive p
-- order of integration (differencing) d
-- moving average order q
-
-#### Estimation
-
-```{r}
-arima(poor_mental_ts_diff, order=c(0, 0, 0))
-```
-```{r}
-lapply(poor_mental_ts_diff, mean, na.rm = TRUE)
-lapply(poor_mental_ts_diff, var, na.rm = TRUE)
-```
-> La comparaison de la moyenne et de la variance est quasi-identique

@@ -1,31 +1,41 @@
-+++++++++++CODE QUI MARCHE+++++++++++++++++++++
-library(tidyverse)
-library(xts)
+METHODES XTS
 
-# Sélection d'uniquement 1 variable
-d <- select(data, IYEAR, X_RFSMOK3)
+coredata(data_4)
+index(data_4)
+tclass(data_4)
+tzone(data_4)
+tformat(data_4) <- "%Y-%m-%d"
+periodicity(data_4)
+data_5 <- to.yearly(data_4)
+data_6 <- to.monthly(data_4)
+data_7 <- to.quarterly(data_4)
+data_8 <- to.period(data_4,period="week")
+nmonths(data_4)
+nquarters(data_4)
+nyears(data_4)
+data_9 <- make.index.unique(data_4, drop=TRUE)
+.index(data_4)
+.indexwday(data_4)
+start(data_4)
+end(data_4)
+str(data_4)
+time(data_4)
+head(data_4) # comparer le debut et la fin pour chaque variables
+tail(data_4)
 
-# Creation d'une variable contenant une valeur unique
+data_xts <- as.xts(data_4)
+tmp <- tempfile()
+write.zoo(data_xts, sep=",", file=tmp)
 
-e <- d  %>%
-  mutate(fumeur = ifelse(X_RFSMOK3 == "true", 1, 0)) %>%
-  select(-X_RFSMOK3) %>%
-  subset(!is.na(fumeur))
-
-f <- e %>%
-  aggregate(by=list(e$IYEAR), sum) %>% 
-  select(-IYEAR)
-
-f$Group.1 <- as.Date(ISOdate(agg$Group.1, 1, 1))
-
-t <- xts(order.by=f$Group.1, f$fumeur) 
-t <- t[-c(nrow(t)),] 
-colnames(t) <-'Fumeur'
-
-plot(t)
+print(PMS_ts)
+colnames(PMS_ts)
+str(PMS_ts)
+end(PMS_ts)
+frequency(PMS_ts)
+deltat(PMS_ts)
 
 
-+++++++++++++++++++++++++++++++++++++++++++++++++++
+__________________________________________________________________________
   
 d <- select(data, IYEAR, SEX, X_RFSMOK3)
 
