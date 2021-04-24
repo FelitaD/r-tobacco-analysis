@@ -17,6 +17,7 @@ str(taxburdendata)
 dim(taxburdendata)
 summary(taxburdendata)
 describe(taxburdendata)
+head(taxburdendata)
 ```
 
 ```{r}
@@ -52,13 +53,13 @@ plot(price_ts)
 # Removing trends
 ```{r}
 log_price <- log(price_ts) # stabilize rapid growth
-ts.plot(l_price)
+ts.plot(log_price)
 
 diff_price <- diff(price_ts) # montre les changements
 ts.plot(diff_price)
 
-diff_price_2 <- diff(price_ts, lag = 10) # augmente la visibilite sur plus grande periode
-ts.plot(diff_price_2)
+diff_price10 <- diff(price_ts, lag = 10) # augmente la visibilite sur plus grande periode
+ts.plot(diff_price_10)
 ```
 ## RANDOM WALK MODEL - SMOKERS
 

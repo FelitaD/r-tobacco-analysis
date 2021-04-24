@@ -17,6 +17,8 @@ library(forecast)
 library(tidyverse)
 library(ggplot2)
 library(psych)
+library(fpp2)
+
 ```
 
 ```{r}
@@ -35,7 +37,7 @@ library(psych)
 
 ## EDA
 
-#### Moyenne de toutes les variables du BRFSS
+## Constitution time series sur les moyennes 
 
 ```{r}
     brfss <- data_1985_2019_cleaned_no_factors %>%
@@ -43,14 +45,22 @@ library(psych)
     brfss_m <- brfss  %>%
       group_by(IDATE) %>% 
       summarise_all(mean, na.rm = TRUE)
+    brfss_dates <- as.Date(brfss_m$IDATE, format = "%Y-%m-%d")
 
     tax_burden <- data_tax_burden %>% select(Year, SubMeasureDesc, Data_Value, Data_Value_Unit)
     tax_m <- tax_burden  %>%
-      group_by(Year) %>% 
-      summarise_all(mean, na.rm = TRUE)
-
-    tax_dates <- as.Date(ISOdate(tax_m$Year, 1, 1))
-    brfss_dates <- as.Date(brfss_m$IDATE, format = "%Y-%m-%d")
+      group_by(SubMeasureDesc, Year) %>% 
+      summarise(Data_Value = mean(Data_Value))
+    
+    tax_rate_m <- tax_m[tax_m$SubMeasureDesc == "Federal and State tax as a Percentage of Retail Price",] 
+    tax_dates <- as.Date(ISOdate(tax_rate_m$Year, 1, 1))
+    tax_rate_m <- tax_rate_m[,3]
+    tax_revenue_m <- tax_m[tax_m$SubMeasureDesc == "Gross Cigarette Tax Revenue",]
+    tax_revenue_m <- tax_revenue_m[,3]
+    pack_conso_m <- tax_m[tax_m$SubMeasureDesc == "Cigarette Consumption (Pack Sales Per Capita)",]
+    pack_conso_m <- pack_conso_m[,3]
+    pack_cost_m <- tax_m[tax_m$SubMeasureDesc == "Average Cost per pack",]
+    pack_cost_m <- pack_cost_m[,3]
     
     age_m <- brfss_m[, c("X_AGEG5YR", "X_AGE65YR", "X_AGE_G")]
     famille_m <- brfss_m[, c("MARITAL", "PREGNANT", "NUMADULT", "CHILDREN", "X_CHLDCNT")]
@@ -58,33 +68,102 @@ library(psych)
     finances_m <- brfss_m[, c("INCOME2", "X_INCOMG", "RENTHOM1")]
     tabac_m <- brfss_m[, c("SMOKE100", "SMOKDAY2", "STOPSMK2", "LASTSMK2", "USENOW3", "X_SMOKER3", "X_RFSMOK3")]
     sante_m <- brfss_m[, c("POORHLTH", "MENTHLTH", "QLMENTL2", "QLSTRES2", "ADDEPEV2", "EMTSUPRT", "LSATISFY")] 
-  
-    tax <- xts(tax_m, order.by=tax_dates)
-    age <- xts(age_m, order.by=brfss_dates)
-    famille <- xts(famille_m, order.by=brfss_dates)
-    education <- xts(education_m, order.by=brfss_dates)
-    finances <- xts(finances_m, order.by=brfss_dates)
-    tabac <- xts(tabac_m, order.by=brfss_dates)
-    sante <- xts(sante_m, order.by=brfss_dates)
+    
+    tax_rate <- xts(tax_rate_m, order.by=tax_dates) %>% to.monthly()
+    tax_revenue <- xts(tax_revenue_m, order.by=tax_dates) %>% to.monthly()
+    pack_conso <- xts(pack_conso_m, order.by=tax_dates) %>% to.monthly()
+    pack_cost <- xts(pack_cost_m, order.by=tax_dates) %>% to.monthly()
+    age <- xts(age_m, order.by=brfss_dates) %>% to.monthly()
+    famille <- xts(famille_m, order.by=brfss_dates) %>% to.monthly()
+    education <- xts(education_m, order.by=brfss_dates) %>% to.monthly()
+    finances <- xts(finances_m, order.by=brfss_dates) %>% to.monthly()
+    tabac <- xts(tabac_m, order.by=brfss_dates) %>% to.monthly()
+    sante <- xts(sante_m, order.by=brfss_dates) %>% to.monthly()
 ```
+## Detection des tendances, saisonnalite et cyclicite & Detection du White Noise
+
+> Trends induce positive correlations in the early lags.
+> Seasonality will induce peaks at the seasonal lags.
+> Cyclicity induces peaks at the average cycle length.
+
+> Verifier si data est cyclique ou saisonniere :
+> When data are either seasonal or cyclic, the ACF will peak around the seasonal lags or at the average cycle length
+
+> White noise :
+> p-value greater than 0.05 suggests that the data are not significantly different from white noise
+> expectation : each value is close to 0
+> 95% of all correlations should line within the blue line
+
+#### Tax burden
 
 ```{r}
-  autoplot(age, facets = TRUE)
-  autoplot(age, facets = FALSE)
-  autoplot(famille, facets = TRUE)
-  autoplot(famille, facets = FALSE)
-  autoplot(education, facets = FALSE)
-  autoplot(education, facets = FALSE)
-  autoplot(finances, facets = FALSE)
-  autoplot(finances, facets = FALSE)
-  autoplot(tabac, facets = FALSE)
-  autoplot(tabac, facets = FALSE)
-  autoplot(sante, facets = FALSE)
-  autoplot(sante, facets = FALSE)
+  autoplot(tax_rate, facets = FALSE) + # cyclic, no trend
+    xlab("Annees") + ylab("Pourcentage de taxe par rapport au retail price") +
+    ggtitle("Evolution du pourcentage de taxe par rapport au retail price")
+  gglagplot(tax_rate) 
+  ggAcf(tax_rate) # pas cyclique
+  
+  autoplot(tax_revenue, facets = FALSE) # upward trend
+  gglagplot(tax_revenue) 
+  ggAcf(tax_revenue) # pas cyclique
+  
+  autoplot(pack_cost, facets = FALSE) # up then downward trend
+  gglagplot(pack_cost) 
+  ggAcf(pack_cost) # pas cyclique
+  
+  autoplot(pack_conso, facets = FALSE) # upward trend
+  gglagplot(pack_conso) 
+  ggAcf(pack_conso) # pas cyclique
+```
+#### BRFSS
+
+```{r}
+  autoplot(age, facets = TRUE) # upward trend
+  gglagplot(age) 
+  ggAcf(age) # pas cyclique
+  
+  autoplot(famille, facets = TRUE) # pas cyclique
+  gglagplot(famille) 
+  ggAcf(famille) # PREGNANT white noise
+  # Ljung-Box Tests
+  Box.test(famille[,"PREGNANT"], lag = 24, fitdf = 0, type = "Lj") # confirme WN car p-value = 0.003829
+  Box.test(famille[,"MARITAL"], lag = 24, fitdf = 0, type = "Lj") # 2.2e-16
+  
+  autoplot(education, facets = TRUE) 
+  gglagplot(education) 
+  ggAcf(education) # pas cyclique
+  
+  autoplot(finances, facets = TRUE)
+  gglagplot(finances) 
+  ggAcf(finances) # pas cyclique
+  
+  autoplot(tabac[,"SMOKE100"])
+  gglagplot(tabac[,"SMOKE100"]) 
+  ggAcf(tabac) # pas cyclique
+  autoplot(tabac, facets = TRUE)
+  gglagplot(tabac) 
+  ggAcf(tabac) # pas cyclique
+  Box.test(tabac[,"SMOKE100"], lag = 2334, fitdf = 0, type = "Lj") # 2.2e-16
+  Box.test(tabac[,"SMOKDAY2"], lag = 24, fitdf = 0, type = "Lj") # 2.2e-16
+  Box.test(tabac[,"STOPSMOK2"], lag = 24, fitdf = 0, type = "Lj") # 2.2e-16
+  Box.test(tabac[,"LASTSMK2"], lag = 24, fitdf = 0, type = "Lj") # 2.2e-16
+  Box.test(tabac[,"USENOW3"], lag = 24, fitdf = 0, type = "Lj") # 2.2e-16
+  Box.test(tabac[,"X_SMOKER3"], lag = 24, fitdf = 0, type = "Lj") # 2.2e-16
+  Box.test(tabac[,"X_RFSMOK3"], lag = 24, fitdf = 0, type = "Lj") # 2.2e-16
+  
+  autoplot(sante, facets = TRUE)
+  gglagplot(sante) 
+  ggAcf(sante) # pas cyclique
 
   finances[index(which.max(finances)),] # premier index de la plus grande valeur
+  
+```
+
+
+```{r}
 
 ```
+
 
 
 
