@@ -72,13 +72,174 @@ ts_ggplot(PMS_xts_interpol, title="Evolution de la santé mentale des répondant
 - POORHLTH, MENTHLTH : Nombre de jours
 - SMOKE100 : 0 1
 
-```{r}
+#### Caracteristiques
 
+```{r}
+# Generate means from eu_percentreturns
+colMeans(PMS_ts_interpol)
+
+# Use apply to calculate sample variance from eu_percentreturns
+apply(PMS_ts_interpol, MARGIN = 2, FUN = var)
+
+# Use apply to calculate standard deviation from eu_percentreturns
+apply(PMS_ts_interpol, MARGIN = 2, FUN = sd)
+
+# Display a histogram of percent returns for each index
+par(mfrow = c(2,2))
+apply(PMS_ts_interpol, MARGIN = 2, FUN = hist, main = "Tabagisme et sante mentale", xlab = "")
+
+# Display normal quantile plots of percent returns for each index
+par(mfrow = c(2,2))
+apply(PMS_ts_interpol, MARGIN = 2, FUN = qqnorm, main = "")
+qqline(PMS_ts_interpol)
+
+head(PMS_ts_interpol)
 ```
 
+#### Relations bivariees
+
+```{r}
+poorhlth <- PMS_ts_interpol[,1]
+menthlth <- PMS_ts_interpol[,2]
+smoke100 <- PMS_ts_interpol[,3]
+```
+
+- log returns : quand time trend commune
 
 
+```{r}
+# Make a scatterplot of DAX and FTSE
+plot(smoke100, menthlth)
 
+# Make a scatterplot matrix of eu_stocks
+pairs(PMS_ts_interpol)
+
+# Convert eu_stocks to log returns
+logreturns <- diff(log(PMS_ts_interpol))
+
+# Plot logreturns
+plot(PMS_ts_interpol)
+
+# Make a scatterplot matrix of logreturns
+pairs(PMS_ts_interpol)
+```
+#### Covariance et correlation
+
+- covariance positive montre association
+  - depend de l'echelle
+- correlations est une version standardisee de la covariance
+  - ne depend pas de l'echelle
+- log returns (si variable petite)
+  - valeur tres petite mais correlation tres forte
+
+
+```{r}
+# Use cov() with DAX_logreturns and FTSE_logreturns
+cov(poorhlth, menthlth)
+
+# Use cov() with logreturns
+cov(PMS_ts_interpol)
+
+# Use cor() with DAX_logreturns and FTSE_logreturns
+cor(poorhlth, menthlth)
+cov(poorhlth, menthlth) / (sd(poorhlth) * sd (menthlth))
+
+# Use cor() with logreturns
+cor(PMS_ts_interpol)
+```
+
+#### Autocorrelation estimates at lags
+
+Etudie comment time series etst reliee a son passee
+Celles avec une forte autocorrelation sont predictibles
+
+- Lag 1 : 1 jour d'ecart
+- Lag 2 : 2 jours d'ecart
+
+ACF autocorrelation function is the autocorrelation function of the time lag
+plot de l'acf est skewed a droit car chaque lag est correle avec ses lags recents
+
+```{r}
+acf(smoke100, lag.max = 2, plot = FALSE)
+acf(poorhlth, lag.max = 2, plot = FALSE)
+acf(menthlth, lag.max = 2, plot = FALSE)
+acf(PMS_ts_interpol, lag.max = 2, plot = FALSE)
+
+acf(smoke100)
+acf(poorhlth)
+acf(menthlth)
+acf(PMS_ts_interpol)
+```
+each ACF figure includes a pair of blue, horizontal, dashed lines representing lag-wise 95% confidence intervals centered at zero. These are used for determining the statistical significance of an individual autocorrelation estimate at a given lag versus a null value of zero, i.e., no autocorrelation at 
+
+#### Autoregression
+
+Chaque observation est regressee sur la precedente
+Le modele comprend aussi :
+  - RW (slope = 1, non stationnaire, forte persistence, Acf tend vers 0 lentement)
+
+(Today - Mean) = Slope * (Yesterday - Mean) + Noise
+
+Slope (phi) between -1 and 1
+- if slope = 0 -> process Y is WN
+- if slope ≠ 0 -> Y dependant on both current noise and previous observation + process Yt autocorrelated
+- large values of slope phi lead to greater autocorrelation
+- negative values of slope result in oscillatory time series
+- if slope = 1 and mean = 0 -> process Y is a RW (Today = Yesterday + Noise) which is not stationary
+- if slope close to 1 -> AR more persistent, Acf revert to 0 quickly -> values far in the past hav little impact
+
+> Independant variable : sante mentale
+> Dependant variable : tabac
+
+#### Autoregression 2 : y a t il de la persistence ? 
+ > Nombre de fumeurs baisse-t-il de maniere persistente ?
+
+Persistence is defined by a high correlation between an observation and its lag, while anti-persistence is defined by a large amount of variation between an observation and its lag.
+
+```{r}
+# Copy and paste the slope (ar1) estimate
+0.3140
+
+# Copy and paste the slope mean (intercept) estimate
+0.4807
+
+# Copy and paste the innovation variance (sigma^2) estimate
+0.002064
+
+# Fit the AR model to AirPassengers
+AR <- arima(smoke100, order = c(1,0,0))
+print(AR)
+
+# Run the following commands to plot the series and fitted values
+ts.plot(smoke100)
+AR_fitted <- smoke100 - residuals(AR)
+points(AR_fitted, type = "l", col = 2, lty = 2)
+```
+#### Prediction a partir du AR
+
+```{r}
+# Fit an AR model to Nile
+AR_fit <- arima(smoke100, order  = c(1, 0, 0))
+print(AR_fit)
+
+# Use predict() to make a 1-step forecast
+predict_AR <- predict(AR_fit)
+
+# Obtain the 1-step forecast using $pred[1]
+predict_AR$pred[1]
+
+# Use predict to make 1-step through 10-step forecasts
+predict(AR_fit, n.ahead = 10)
+
+# Run to plot the Nile series plus the forecast and 95% prediction intervals
+ts.plot(smoke100, xlim = c(1996, 2050))
+AR_forecast <- predict(AR_fit, n.ahead = 10000)$pred 
+AR_forecast_se <- predict(AR_fit, n.ahead = 10000)$se
+points(AR_forecast, type = "l", col = 2)
+points(AR_forecast - 2*AR_forecast_se, type = "l", col = 2, lty = 2)
+points(AR_forecast + 2*AR_forecast_se, type = "l", col = 2, lty = 2)
+
+```
 
 
 
