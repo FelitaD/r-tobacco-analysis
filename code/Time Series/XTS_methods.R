@@ -1,0 +1,35 @@
+METHODES XTS
+
+coredata(data_4)
+index(data_4)
+tclass(data_4)
+tzone(data_4)
+tformat(data_4) <- "%Y-%m-%d"
+periodicity(data_4)
+data_5 <- to.yearly(data_4)
+data_6 <- to.monthly(data_4)
+data_7 <- to.quarterly(data_4)
+data_8 <- to.period(data_4,period="week")
+nmonths(data_4)
+nquarters(data_4)
+nyears(data_4)
+data_9 <- make.index.unique(data_4, drop=TRUE)
+.index(data_4)
+.indexwday(data_4)
+start(data_4)
+end(data_4)
+str(data_4)
+time(data_4)
+head(data_4) # comparer le debut et la fin pour chaque variables
+tail(data_4)
+
+data_xts <- as.xts(data_4)
+tmp <- tempfile()
+write.zoo(data_xts, sep=",", file=tmp)
+
+print(PMS_ts)
+colnames(PMS_ts)
+str(PMS_ts)
+end(PMS_ts)
+frequency(PMS_ts)
+deltat(PMS_ts)

@@ -1,0 +1,33 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+
+## WHITE NOISE MODEL - POOR MENTAL HEALTH
+
+```{r}
+ts.plot(poor_mental_ts)
+poor_mental_ts_diff <- diff(poor_mental_ts, lag = 4) # remove long term (seasonal) trends
+ts.plot(poor_mental_ts_diff)
+```
+
+Base pour d'autres modeles de time series
+
+ARIMA(p, d, q)
+- auto-regressive p
+- order of integration (differencing) d
+- moving average order q
+
+#### Estimation
+
+```{r}
+arima(poor_mental_ts_diff, order=c(0, 0, 0))
+```
+```{r}
+lapply(poor_mental_ts_diff, mean, na.rm = TRUE)
+lapply(poor_mental_ts_diff, var, na.rm = TRUE)
+```
+> La comparaison de la moyenne et de la variance est quasi-identique
+
+

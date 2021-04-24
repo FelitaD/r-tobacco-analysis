@@ -1,0 +1,215 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(scales)
+library(reshape2)
+library(ggplot2)
+library(xts)
+library(zoo)
+library(tsbox)
+library(forecast)
+library(tidyverse)
+library(ggplot2)
+library(psych)
+```
+
+```{r}
+  data_tax_burden <- read_delim('/Users/lmp/CNAM/Stats/Mini-memoire/data/The_Tax_Burden_on_Tobacco__1970-2019.csv', delim = ";")
+  str(data_tax_burden)
+  dim(data_tax_burden)
+  summary(data_tax_burden)
+  describe(data_tax_burden)
+  head(data_tax_burden)
+  unique(data_tax_burden$SubMeasureDesc)
+  colnames(data_tax_burden)
+
+
+  data_1985_2019_cleaned_no_factors <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_1985_2019_cleaned_no_factors.csv")
+```
+
+## EDA
+
+#### Moyenne de toutes les variables du BRFSS
+
+```{r}
+    brfss <- data_1985_2019_cleaned_no_factors %>%
+      select(-c(X, SEX, X_STATE, IYEAR))
+    brfss_m <- brfss  %>%
+      group_by(IDATE) %>% 
+      summarise_all(mean, na.rm = TRUE)
+
+    tax_burden <- data_tax_burden %>% select(Year, SubMeasureDesc, Data_Value, Data_Value_Unit)
+    tax_m <- tax_burden  %>%
+      group_by(Year) %>% 
+      summarise_all(mean, na.rm = TRUE)
+
+    tax_dates <- as.Date(ISOdate(tax_m$Year, 1, 1))
+    brfss_dates <- as.Date(brfss_m$IDATE, format = "%Y-%m-%d")
+    
+    age_m <- brfss_m[, c("X_AGEG5YR", "X_AGE65YR", "X_AGE_G")]
+    famille_m <- brfss_m[, c("MARITAL", "PREGNANT", "NUMADULT", "CHILDREN", "X_CHLDCNT")]
+    education_m <- brfss_m[, c("EDUCA", "X_EDUCAG", "EMPLOY1")]
+    finances_m <- brfss_m[, c("INCOME2", "X_INCOMG", "RENTHOM1")]
+    tabac_m <- brfss_m[, c("SMOKE100", "SMOKDAY2", "STOPSMK2", "LASTSMK2", "USENOW3", "X_SMOKER3", "X_RFSMOK3")]
+    sante_m <- brfss_m[, c("POORHLTH", "MENTHLTH", "QLMENTL2", "QLSTRES2", "ADDEPEV2", "EMTSUPRT", "LSATISFY")] 
+  
+    tax <- xts(tax_m, order.by=tax_dates)
+    age <- xts(age_m, order.by=brfss_dates)
+    famille <- xts(famille_m, order.by=brfss_dates)
+    education <- xts(education_m, order.by=brfss_dates)
+    finances <- xts(finances_m, order.by=brfss_dates)
+    tabac <- xts(tabac_m, order.by=brfss_dates)
+    sante <- xts(sante_m, order.by=brfss_dates)
+```
+
+```{r}
+  autoplot(age, facets = TRUE)
+  autoplot(age, facets = FALSE)
+  autoplot(famille, facets = TRUE)
+  autoplot(famille, facets = FALSE)
+  autoplot(education, facets = FALSE)
+  autoplot(education, facets = FALSE)
+  autoplot(finances, facets = FALSE)
+  autoplot(finances, facets = FALSE)
+  autoplot(tabac, facets = FALSE)
+  autoplot(tabac, facets = FALSE)
+  autoplot(sante, facets = FALSE)
+  autoplot(sante, facets = FALSE)
+
+  finances[index(which.max(finances)),] # premier index de la plus grande valeur
+
+```
+
+
+
+
+- Remplacement des donnees de 2010 par interpolation lineaire
+
+```{r}
+original_df <-PMS_mean[!startsWith(PMS_mean$IDATE,"2010"),]
+times.init <- as.Date(original_df$DATE, format = "%Y-%m-%d")
+new_df <-xts(original_df[,2:4],times.init)
+
+PMS_xts_interpol <- na.approx(new_df, xout=seq(min(times.init), max(times.init), "day"))
+ts.plot(PMS_xts_interpol)
+
+PMS_ts_interpol <- ts_ts(PMS_xts_interpol)
+ts_ggplot(PMS_xts_interpol, title="Evolution de la santé mentale des répondants", subtitle="Fumeurs et non fumeurs") +
+  theme_tsbox() +
+  scale_color_tsbox() # ts_ggplot marche aussi avec xts
+```
+
+> Tendance : en augmentation
+> Seasonality : peut-etre
+
+
+## Visualisation multivariee
+
+### Correlation
+
+- POORHLTH, MENTHLTH : Nombre de jours
+- SMOKE100 : 0 1
+
+#### Caracteristiques
+
+```{r}
+# Generate means from eu_percentreturns
+colMeans(PMS_ts_interpol)
+
+# Use apply to calculate sample variance from eu_percentreturns
+apply(PMS_ts_interpol, MARGIN = 2, FUN = var)
+
+# Use apply to calculate standard deviation from eu_percentreturns
+apply(PMS_ts_interpol, MARGIN = 2, FUN = sd)
+
+# Display a histogram of percent returns for each index
+par(mfrow = c(2,2))
+apply(PMS_ts_interpol, MARGIN = 2, FUN = hist, main = "Tabagisme et sante mentale", xlab = "")
+
+# Display normal quantile plots of percent returns for each index
+par(mfrow = c(2,2))
+apply(PMS_ts_interpol, MARGIN = 2, FUN = qqnorm, main = "")
+qqline(PMS_ts_interpol)
+```
+
+#### Relations bivariees
+
+```{r}
+poorhlth <- PMS_ts_interpol[,1]
+menthlth <- PMS_ts_interpol[,2]
+smoke100 <- PMS_ts_interpol[,3]
+```
+
+- log returns : quand time trend commune
+
+```{r}
+# Make a scatterplot of DAX and FTSE
+plot(smoke100, menthlth)
+
+# Make a scatterplot matrix of eu_stocks
+pairs(PMS_ts_interpol)
+
+# Convert eu_stocks to log returns
+logreturns <- diff(log(PMS_ts_interpol))
+
+# Plot logreturns
+plot(PMS_ts_interpol)
+
+# Make a scatterplot matrix of logreturns
+pairs(PMS_ts_interpol)
+```
+#### Covariance et correlation
+
+- covariance positive montre association
+  - depend de l'echelle
+- correlations est une version standardisee de la covariance
+  - ne depend pas de l'echelle
+- log returns (si variable petite)
+  - valeur tres petite mais correlation tres forte
+
+
+```{r}
+# Use cov() with DAX_logreturns and FTSE_logreturns
+cov(poorhlth, menthlth)
+
+# Use cov() with logreturns
+cov(PMS_ts_interpol)
+
+# Use cor() with DAX_logreturns and FTSE_logreturns
+cor(poorhlth, menthlth)
+cov(poorhlth, menthlth) / (sd(poorhlth) * sd (menthlth))
+
+# Use cor() with logreturns
+cor(PMS_ts_interpol)
+```
+
+#### Autocorrelation estimates at lags
+
+Etudie comment time series etst reliee a son passee
+Celles avec une forte autocorrelation sont predictibles
+
+- Lag 1 : 1 jour d'ecart
+- Lag 2 : 2 jours d'ecart
+
+ACF autocorrelation function is the autocorrelation function of the time lag
+plot de l'acf est skewed a droit car chaque lag est correle avec ses lags recents
+
+```{r}
+acf(smoke100, lag.max = 2, plot = FALSE)
+acf(poorhlth, lag.max = 2, plot = FALSE)
+acf(menthlth, lag.max = 2, plot = FALSE)
+acf(PMS_ts_interpol, lag.max = 2, plot = FALSE)
+
+acf(smoke100)
+acf(poorhlth)
+acf(menthlth)
+acf(PMS_ts_interpol)
+```
+each ACF figure includes a pair of blue, horizontal, dashed lines representing lag-wise 95% confidence intervals centered at zero. These are used for determining the statistical significance of an individual autocorrelation estimate at a given lag versus a null value of zero, i.e., no autocorrelation at 
+

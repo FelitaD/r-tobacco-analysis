@@ -1,0 +1,245 @@
+---
+title: "Nettoyage"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(foreign)
+library(naniar)
+library(tidyverse)
+```
+
+```{r}
+data_1985_2019_loaded <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_1985_2019_loaded.csv")
+```
+
+```{r}
+data <- data_1985_2019_loaded
+```
+
+# REPLACE NAs and RELABEL FACTORS
+
+# SMOKING
+
+```{r}
+# data$X_RFSMOK3[brfss$X_RFSMOK3 == 2] <- 0
+data$X_RFSMOK3[data$X_RFSMOK3 == 1] <- 0 # Non
+data$X_RFSMOK3[data$X_RFSMOK3 == 2] <- 1 # Oui
+data <- data %>% replace_with_na(replace = list(X_RFSMOK3  = c(7, 9)))
+
+data <- data %>% replace_with_na(replace = list(X_SMOKER3  = c(9)))
+data$X_SMOKER3 = cut(data$X_SMOKER3, 4, labels=c("Fumeur quotidien", "Fumeur occasionnel", "Ancien fumeur", "Non fumeur"))
+
+data <- data %>% replace_with_na(replace = list(USENOW3  = c(7, 9)))
+data$USENOW3 <- as.factor(data$USENOW3)
+levels(data$USENOW3) <- c("Quotidiennement", "Occasionnellement", "Jamais")
+
+data <- data %>% replace_with_na(replace = list(LASTSMK2  = c(77,99)))
+data$LASTSMK2 = cut(data$LASTSMK2, 8, labels=c("< 1 month", '1 - 3 month',"3 - 6 months","6 - 12 months","1 - 5 year","5 - 10 years", "10 years or more", "Never smoked"))
+
+data$STOPSMK2[data$STOPSMK2 == 2] <- 0 # Non
+data <- data %>% replace_with_na(replace = list(STOPSMK2  = c(7,9)))
+
+data <- data %>% replace_with_na(replace = list(SMOKDAY2 = c(7,9)))
+data$SMOKDAY2 <- as.factor(data$SMOKDAY2)
+levels(data$SMOKDAY2) <- c("Quotidiennement", "Occasionnellement", "Jamais")
+
+data$SMOKE100[data$SMOKE100 == 2] <- 0 # Oui
+data <- data %>% replace_with_na(replace = list(SMOKE100 = c(7,9)))
+```
+
+## AGE SEXE
+
+```{r}
+data <- data %>% replace_with_na(replace = list(SEX = c(7, 9)))
+data$SEX <- as.factor(data$SEX)
+levels(data$SEX) <- c("Male", "Female")
+
+data <- data %>% replace_with_na(replace = list(X_AGE65YR = c(3)))
+data$X_AGEG5YR <- as.factor(data$X_AGEG5YR)
+data <- data  %>% 
+  mutate(X_AGEG5YR = case_when(X_AGEG5YR == 1 ~ "18 - 24",
+                                X_AGEG5YR == 2 ~ "25 - 29",
+                                X_AGEG5YR == 3 ~ "30 - 34",
+                                X_AGEG5YR == 4 ~ "35 - 39",
+                                X_AGEG5YR == 5 ~ "40 - 44",
+                                X_AGEG5YR == 6 ~ "45 - 49",
+                                X_AGEG5YR == 7 ~ "50 - 54",
+                                X_AGEG5YR == 8 ~ "55 - 59",
+                                X_AGEG5YR == 9 ~ "60 - 64",
+                                X_AGEG5YR == 10 ~ "65 - 69",
+                                X_AGEG5YR == 11 ~ "70 - 74",
+                                X_AGEG5YR == 12 ~ "75 - 79",
+                                X_AGEG5YR == 13 ~ "80 +"))
+
+data <- data  %>% 
+  mutate(X_AGE65YR = case_when(X_AGE65YR == 1 ~ "18 - 64",
+                              X_AGE65YR == 2 ~ "65 +"))
+data$X_AGE65YR <- as.factor(data$X_AGE65YR)
+
+         
+data$X_AGE_G <- as.factor(data$X_AGE_G)
+data <- data  %>% 
+  mutate(X_AGE_G = case_when(X_AGE_G == 1 ~ "18 - 24",
+                             X_AGE_G == 2 ~ "25 - 34",
+                             X_AGE_G == 3 ~ "35 - 44",
+                             X_AGE_G == 4 ~ "45 - 54",
+                             X_AGE_G == 5 ~ "55 - 64",
+                             X_AGE_G == 6 ~ "65 +"))
+```
+
+## FAMILLE
+
+```{r}
+data <- data %>% replace_with_na(replace = list(MARITAL = c(9)))
+data$MARITAL = cut(data$MARITAL, 6, labels=c("Marié", 'Divorcé',"Veuf","Séparé","Jamais marié","Membre d'un couple non marié"))
+
+data$CHILDREN[data$CHILDREN == 88] <- 0
+data <- data %>% replace_with_na(replace = list(CHILDREN = c(99)))
+data$X_CHLDCNT = cut(data$X_CHLDCNT, 6, labels=c("Pas d'enfant", '1 enfant',"2 enfants","3 enfants","4 enfants","Plus de 5 enfants"))
+
+data <- data %>% replace_with_na(replace = list(PREGNANT = c(7, 9)))
+data$PREGNANT[data$PREGNANT == 2] <- 0
+
+data <- data %>% replace_with_na(replace = list(X_CHLDCNT = c(9)))
+```
+
+## EDUCATION
+
+
+```{r}
+data <- data %>% replace_with_na(replace = list(EDUCA = c(7, 8, 9)))
+
+data$EDUCA <- as.factor(data$EDUCA)
+data <- droplevels(data)
+
+levels(data$EDUCA) <- c("Jamais allé à l'école", "Elementaire", "Un peu lycée", "Fini lycée", "Un peu licence", "Fini licence")
+
+data <- data %>% replace_with_na(replace = list(X_EDUCAG = c(9)))
+data$X_EDUCAG <- as.factor(data$X_EDUCAG)
+levels(data$X_EDUCAG) <- c("Sans diplome", "Baccalauréat", "Ens. Sup. Sans diplome", "Ens. Sup. Avec diplome")
+```
+
+# STATUT SOCIAL
+
+```{r}
+data <- data %>% replace_with_na(replace = list(EMPLOY1 = c(9)))
+data$EMPLOY1 = cut(data$EMPLOY1, 8, labels=c("Salarié", "Auto-entrepeneur","Chômeur > 1 an","Chômeur < 1 an", "Personne au foyer","Etudiant", "Retraité", "Dans l'impossibilité de travailler"))
+
+data <- data %>% replace_with_na(replace = list(INCOME2 = c(77, 99)))
+data$INCOME2 = cut(data$INCOME2, 8, labels=c("< 10 000", "10 - 15 000",'15 - 20 000',"20 - 25 000", "25 - 35 000","35 - 50 000", "50 - 75  000", "75 000 +"))
+
+data <- data %>% replace_with_na(replace = list(X_INCOMG = c(9)))
+data$X_INCOMG = cut(data$X_INCOMG, 5, labels=c("< 15 000", '15 - 25 000',"25 - 35 000","35 - 50 000","< 50 000"))
+
+data <- data %>% replace_with_na(replace = list(RENTHOM1 = c(7, 9)))
+data$RENTHOM1 = cut(data$RENTHOM1, 3, labels=c("Propriétaire", 'Locataire',"Autre"))
+
+data <- data %>% replace_with_na(replace = list(VETERAN3 = c(7, 9)))
+data$VETERAN3[data$VETERAN3 == 2] <- 0
+```
+
+## SANTE MENTALE
+
+```{r}
+data$MENTHLTH[data$MENTHLTH == 88] <- 0
+data <- data %>% replace_with_na(replace = list(MENTHLTH = c(77,99)))
+
+data$POORHLTH[data$POORHLTH  == 88] <- 0
+data <- data %>% replace_with_na(replace = list(POORHLTH  = c(77,99)))
+
+data$QLMENTL2[data$QLMENTL2  == 88] <- 0
+data <- data %>% replace_with_na(replace = list(QLMENTL2  = c(77,99)))
+
+data$QLSTRES2[data$QLSTRES2  == 88] <- 0
+data <- data %>% replace_with_na(replace = list(QLSTRES2  = c(77,99)))
+
+data <- data %>% replace_with_na(replace = list(EMTSUPRT  = c(7,9)))
+data$EMTSUPRT_FACTOR = as.factor(data$EMTSUPRT)
+levels(data$EMTSUPRT_FACTOR)[levels(data$EMTSUPRT_FACTOR)=="1"] <- "Toujours"
+levels(data$EMTSUPRT_FACTOR)[levels(data$EMTSUPRT_FACTOR)=="2"] <- "Souvent"
+levels(data$EMTSUPRT_FACTOR)[levels(data$EMTSUPRT_FACTOR)=="3"] <- "Parfois"
+levels(data$EMTSUPRT_FACTOR)[levels(data$EMTSUPRT_FACTOR)=="4"] <- "Rarement"
+levels(data$EMTSUPRT_FACTOR)[levels(data$EMTSUPRT_FACTOR)=="5"] <- "Jamais"
+
+data <- data %>% replace_with_na(replace = list(LSATISFY  = c(7,9)))
+data$LSATISFY_FACTOR = as.factor(data$LSATISFY)
+levels(data$LSATISFY_FACTOR)[levels(data$LSATISFY_FACTOR)=="1"] <- "Très satisfait"
+levels(data$LSATISFY_FACTOR)[levels(data$LSATISFY_FACTOR)=="2"] <- "Satisfait"
+levels(data$LSATISFY_FACTOR)[levels(data$LSATISFY_FACTOR)=="3"] <- "Insatisfait"
+levels(data$LSATISFY_FACTOR)[levels(data$LSATISFY_FACTOR)=="4"] <- "Très insatisfait"
+
+data <- data %>% replace_with_na(replace = list(ADDEPEV2  = c(7,9)))
+data$ADDEPEV2[data$ADDEPEV2  == 2] <- 0
+
+```
+
+```{r}
+data <- subset(data, IYEAR != 1)
+data <- subset(data, IYEAR != 80)
+
+data$IYEAR[data$IYEAR  == 84] <- 1984
+data$IYEAR[data$IYEAR  == 85] <- 1985
+data$IYEAR[data$IYEAR  == 86] <- 1986
+data$IYEAR[data$IYEAR  == 87] <- 1987
+data$IYEAR[data$IYEAR  == 88] <- 1988
+data$IYEAR[data$IYEAR  == 89] <- 1989
+data$IYEAR[data$IYEAR  == 90] <- 1990
+data$IYEAR[data$IYEAR  == 91] <- 1991
+data$IYEAR[data$IYEAR  == 92] <- 1992
+data$IYEAR[data$IYEAR  == 93] <- 1993
+data$IYEAR[data$IYEAR  == 94] <- 1994
+data$IYEAR[data$IYEAR  == 95] <- 1995
+data$IYEAR[data$IYEAR  == 96] <- 1996
+data$IYEAR[data$IYEAR  == 97] <- 1997
+data$IYEAR[data$IYEAR  == 98] <- 1998
+```
+
+```{r}
+data <- data %>%
+  mutate_at(vars(IMONTH, IDAY), ~replace_na(., 01))
+
+data <- subset(data, select = -c(IDATE))
+
+data$IDATE <- paste(data$IYEAR, data$IMONTH, data$IDAY, sep='-')
+
+data$IDATE <- as.Date(data$IDATE, format="%Y-%m-%d")
+
+data <- data[!is.na(data$IDATE), ]
+```
+
+# ORDRE, DECOUPAGE et EXPORTATION
+
+```{r}
+data <- data[, c("IDATE", "IYEAR", "X_STATE", "SEX", "X_AGEG5YR",
+                  "X_AGE65YR", "X_AGE_G", "MARITAL", "PREGNANT", 
+                  "NUMADULT", "CHILDREN", "X_CHLDCNT", 
+                  "EDUCA", "X_EDUCAG", "EMPLOY1", 
+                  "INCOME2", "X_INCOMG", "RENTHOM1", "VETERAN3", 
+                  "SMOKE100","SMOKDAY2","STOPSMK2",
+                  "LASTSMK2","USENOW3","X_SMOKER3", "X_RFSMOK3",
+                  "POORHLTH", "MENTHLTH", "QLMENTL2", "QLSTRES2", 
+                  "ADDEPEV2","EMTSUPRT", "LSATISFY")]
+```
+
+```{r}
+data_1985_2019 <- data
+
+data_1985_1986 <- subset(data, IYEAR == 1985 |  IYEAR == 1986 | IYEAR == 1987 | IYEAR == 1988)
+data_1985_1990 <- subset(data, IYEAR == 1985 |  IYEAR == 1986 | IYEAR == 1987 | IYEAR == 1988 | IYEAR == 1989 | IYEAR == 1990)
+data_1991_2000 <- subset(data, IYEAR == 1991 |  IYEAR == 1992 | IYEAR == 1993 | IYEAR == 1994 | IYEAR == 1995 | IYEAR == 1996 | 1997 | IYEAR == 1998 | IYEAR == 1999 | IYEAR == 2000)
+data_2001_2010 <- subset(data, IYEAR == 2001 |  IYEAR == 2002 | IYEAR == 2003 | IYEAR == 2004 | IYEAR == 2005 | IYEAR == 2006 | 2007 | IYEAR == 2008 | IYEAR == 2009 | IYEAR == 2010)
+data_2011_2019 <- subset(data, IYEAR == 2011 |  IYEAR == 2012 | IYEAR == 2013 | IYEAR == 2014 | IYEAR == 2015 | IYEAR == 2016 | 2017 | IYEAR == 2018 | IYEAR == 2019 | IYEAR == 2020)
+```
+
+
+```{r}
+write.csv(data_1985_1990, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_1985_1990_cleaned.csv',sep = ''))
+write.csv(data_1991_2000, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_1991_2000_cleaned.csv',sep = ''))
+write.csv(data_2001_2010, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_2001_2010_cleaned.csv',sep = ''))
+write.csv(data_2011_2019, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_2011_2019_cleaned.csv',sep = ''))
+
+write.csv(data_1985_2019, paste("~/CNAM/Stats/Mini-memoire/data/", 'data_1985_2019_cleaned.csv',sep = ''))
+```
+

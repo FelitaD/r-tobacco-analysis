@@ -1,6 +1,8 @@
 ---
 title: "R Notebook"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -18,7 +20,7 @@ library(tsbox)
   data <- data_1985_2019
 ```
 
-## SMOKE100, POORHLTH, MENTHLTH de 1996 a 2019
+## EDA
 
 #### Choix des variables
 ```{r}
@@ -65,6 +67,10 @@ ts_ggplot(PMS_xts_interpol, title="Evolution de la santé mentale des répondant
   scale_color_tsbox() # ts_ggplot marche aussi avec xts
 ```
 
+> Tendance : en augmentation
+> Seasonality : peut-etre
+
+
 ## Visualisation multivariee
 
 ### Correlation
@@ -92,8 +98,6 @@ apply(PMS_ts_interpol, MARGIN = 2, FUN = hist, main = "Tabagisme et sante mental
 par(mfrow = c(2,2))
 apply(PMS_ts_interpol, MARGIN = 2, FUN = qqnorm, main = "")
 qqline(PMS_ts_interpol)
-
-head(PMS_ts_interpol)
 ```
 
 #### Relations bivariees
@@ -105,7 +109,6 @@ smoke100 <- PMS_ts_interpol[,3]
 ```
 
 - log returns : quand time trend commune
-
 
 ```{r}
 # Make a scatterplot of DAX and FTSE
@@ -171,75 +174,4 @@ acf(menthlth)
 acf(PMS_ts_interpol)
 ```
 each ACF figure includes a pair of blue, horizontal, dashed lines representing lag-wise 95% confidence intervals centered at zero. These are used for determining the statistical significance of an individual autocorrelation estimate at a given lag versus a null value of zero, i.e., no autocorrelation at 
-
-#### Autoregression
-
-Chaque observation est regressee sur la precedente
-Le modele comprend aussi :
-  - RW (slope = 1, non stationnaire, forte persistence, Acf tend vers 0 lentement)
-
-(Today - Mean) = Slope * (Yesterday - Mean) + Noise
-
-Slope (phi) between -1 and 1
-- if slope = 0 -> process Y is WN
-- if slope ≠ 0 -> Y dependant on both current noise and previous observation + process Yt autocorrelated
-- large values of slope phi lead to greater autocorrelation
-- negative values of slope result in oscillatory time series
-- if slope = 1 and mean = 0 -> process Y is a RW (Today = Yesterday + Noise) which is not stationary
-- if slope close to 1 -> AR more persistent, Acf revert to 0 quickly -> values far in the past hav little impact
-
-> Independant variable : sante mentale
-> Dependant variable : tabac
-
-#### Autoregression 2 : y a t il de la persistence ? 
- > Nombre de fumeurs baisse-t-il de maniere persistente ?
-
-Persistence is defined by a high correlation between an observation and its lag, while anti-persistence is defined by a large amount of variation between an observation and its lag.
-
-```{r}
-# Copy and paste the slope (ar1) estimate
-0.3140
-
-# Copy and paste the slope mean (intercept) estimate
-0.4807
-
-# Copy and paste the innovation variance (sigma^2) estimate
-0.002064
-
-# Fit the AR model to AirPassengers
-AR <- arima(smoke100, order = c(1,0,0))
-print(AR)
-
-# Run the following commands to plot the series and fitted values
-ts.plot(smoke100)
-AR_fitted <- smoke100 - residuals(AR)
-points(AR_fitted, type = "l", col = 2, lty = 2)
-```
-#### Prediction a partir du AR
-
-```{r}
-# Fit an AR model to Nile
-AR_fit <- arima(smoke100, order  = c(1, 0, 0))
-print(AR_fit)
-
-# Use predict() to make a 1-step forecast
-predict_AR <- predict(AR_fit)
-
-# Obtain the 1-step forecast using $pred[1]
-predict_AR$pred[1]
-
-# Use predict to make 1-step through 10-step forecasts
-predict(AR_fit, n.ahead = 10)
-
-# Run to plot the Nile series plus the forecast and 95% prediction intervals
-ts.plot(smoke100, xlim = c(1996, 2050))
-AR_forecast <- predict(AR_fit, n.ahead = 10000)$pred 
-AR_forecast_se <- predict(AR_fit, n.ahead = 10000)$se
-points(AR_forecast, type = "l", col = 2)
-points(AR_forecast - 2*AR_forecast_se, type = "l", col = 2, lty = 2)
-points(AR_forecast + 2*AR_forecast_se, type = "l", col = 2, lty = 2)
-
-```
-
-
 
