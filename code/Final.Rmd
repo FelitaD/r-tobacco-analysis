@@ -1,0 +1,81 @@
+---
+title: "Tabagisme"
+subtitle: "Analyse multivariee"
+author: "Meyssa Beddar & Félita Donor"
+output: 
+  html_document: 
+    theme: flatly
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = FALSE, 
+  message = FALSE, 
+  warning = FALSE
+)
+```
+
+```{r global, include=FALSE}
+library(correlationfunnel)
+library(tidyquant)
+library(plotly)
+library(tidyverse)
+library(shiny)
+library(tidyverse)
+library(scales)
+library(reshape2)
+library(ggplot2)
+library(xts)
+library(zoo)
+library(tsbox)
+library(forecast)
+library(ggplot2)
+library(psych)
+library(fpp2)
+
+Tax_burden <- read_delim('/Users/lmp/CNAM/Stats/Mini-memoire/data/The_Tax_Burden_on_Tobacco__1970-2019.csv', delim = ";")
+# BRFSS <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_1985_2019_cleaned_no_factors.csv")
+```
+
+## Problematique : Quels sont les facteurs qui influencent le plus le tabagisme ?
+
+Considération des facteurs socio-démographiques, prix et santé mentale
+
+## Plan
+
+1. Description des Donnees
+    i) BRFSS
+    ii) Tax Burden
+2. Exploration Data Analysis
+    i) Normal Plots
+    ii) Time Series
+
+## 1. Description des Donnees
+
+```{r}
+inputPanel(
+  shiny::selectInput("dataset", label = NULL, 
+                     choices = c("Tax_burden", "BRFSS"))
+)
+```
+
+```{r}
+data <- reactive({ get(input$dataset) })
+
+output$text <- renderPrint ({
+  print("Dimensions: ")
+  dim(data())
+})
+
+output$table <- renderTable ({
+  head(data())
+})
+
+textOutput("text")
+tableOutput("table")
+
+```
+
+## 2. Exploration Data Analysis
+###

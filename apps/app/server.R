@@ -17,7 +17,15 @@ shinyServer(function(input, output) {
     input$field
   })
   
+  base <- reactive ({get(input$data) })
+  
   output$plot <- renderPlot({
+    mydata <- base()
+    autoplot(mydata, facets = TRUE) # upward trend
+    
+  })
+  
+  output$plot2 <- renderPlot({
 
     # Sélection d'uniquement 1 variable
     d <- select(data, IYEAR, !!as.symbol(input$field))

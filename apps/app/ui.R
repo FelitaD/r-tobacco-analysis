@@ -12,13 +12,14 @@ shinyUI(fluidPage(
       hr(),
       fluidRow(column(4, verbatimTextOutput("value"))),
       
-      selectInput("field", "Choose a field :",
-                  choices = names(data),
-                  selected = "X_RFSMOK3"),
+      selectInput("data", "Choose a dataset :",
+                  choices = c("age" = "age",
+                              "tax_rate" = "tax_rate"),
+                  selected = "age"),
       
-      selectInput("field2", "Choose a field :",
-                  choices = names(data),
-                  selected = "X_SMOKER3")
+      selectInput("field", "Choose a field :",
+                  choices = choices,
+                  selected = "X_RFSMOK3"),
     ),
     
     mainPanel(
