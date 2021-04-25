@@ -3,7 +3,7 @@ title: "Tabagisme"
 subtitle: "Analyse multivariee"
 author: "Meyssa Beddar & Félita Donor"
 output: 
-  html_document: 
+  slidy_presentation: 
     theme: flatly
 runtime: shiny
 ---
@@ -14,9 +14,6 @@ knitr::opts_chunk$set(
   message = FALSE, 
   warning = FALSE
 )
-```
-
-```{r global, include=FALSE}
 library(correlationfunnel)
 library(tidyquant)
 library(plotly)
@@ -33,10 +30,13 @@ library(forecast)
 library(ggplot2)
 library(psych)
 library(fpp2)
-
-Tax_burden <- read_delim('/Users/lmp/CNAM/Stats/Mini-memoire/data/The_Tax_Burden_on_Tobacco__1970-2019.csv', delim = ";")
-# BRFSS <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_1985_2019_cleaned_no_factors.csv")
+library(rsconnect)
 ```
+
+```{r}
+load("/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData")
+```
+
 
 ## Problematique : Quels sont les facteurs qui influencent le plus le tabagisme ?
 
@@ -51,12 +51,12 @@ Considération des facteurs socio-démographiques, prix et santé mentale
     i) Normal Plots
     ii) Time Series
 
-## 1. Description des Donnees
+# 1. Description des Donnees 
 
 ```{r}
 inputPanel(
   shiny::selectInput("dataset", label = NULL, 
-                     choices = c("Tax_burden", "BRFSS"))
+                     choices = c("tax_burden", "brfss"))
 )
 ```
 
@@ -69,13 +69,137 @@ output$text <- renderPrint ({
 })
 
 output$table <- renderTable ({
-  head(data())
+  head(data(), 5)
 })
 
 textOutput("text")
 tableOutput("table")
-
 ```
 
-## 2. Exploration Data Analysis
-###
+# 2. Exploration Data Analysis
+
+## Normal Plots
+
+## Time Series
+ 
+### Themes generaux
+
+```{r}
+inputPanel(
+  shiny::selectInput("theme", "Thème",
+                  list(`Consommation tabac` = list("tabac","pack_conso"),
+                       `Prix tabac` = list("tax_rate", "tax_revenue", "pack_cost"),
+                       `Socio-demographie` = list("famille", "education", "finances", "age"),
+                       `Sante` = list("sante1", "sante2")),
+                  selected = "pack_conso")
+
+  # shiny::selectInput("variable2", "2eme variable", # lorsque les time series sont multivaries
+  #                 list(`Tabac` = list("SMOKE100","SMOKDAY2", "STOPSMK2", "LASTSMK2", "USENOW3", "X_SMOKER3", "X_RFSMOK3"),
+  #                      `Prix tabac` = list("tax_rate", "tax_revenue", "pack_cost"),
+  #                      `Socio-demographie` = list("famille", "education", "finances"),
+  #                      `Sante` = list("sante")),
+  #                 selected = "pack_conso")
+)
+```
+
+```{r eval=FALSE}
+autoplot(sante, facets=TRUE) +
+  xlab("Années") + ylab("Numéro de la réponse") +
+  ggtitle("Taxe par rapport au prix de vente") 
+```
+
+
+```{r}
+theme <- reactive({ get(input$theme) })
+# variable2 <- reactive({ get(input$variable2) })
+
+output$plot1 <- renderPlot({
+    if (input$theme == "tabac") {
+      autoplot(theme(), facets=TRUE) +
+        xlab("Années") + ylab("Numéro de la réponse") +
+        ggtitle("Taxe par rapport au prix de vente") +
+        scale_color_manual(labels = c("Fumé au moins 100 cigarettes dans sa vie (1:Oui)",
+                                      "Fréquence (1:quotidien - 3:jamais)",
+                                      "A arrêté dans l'année (1:Oui)",
+                                      "Interval depuis la dernière cigarette (1:<1 mois, 4:6-12 mois, 7:>10 ans)",
+                                      "Utilise des substitut (1:quotidien - 3:jamais)s",
+                                      "Statut fumeur (1:quotidien, 2:occasionnel, 3:ancien, 4:non-fumeur) "), values = c(1, 2, 3, 4, 5, 6,7))
+      
+    } else if (input$theme == "pack_conso")  {
+      autoplot(theme()) +
+        xlab("Années") + ylab("Nombre de paquets") +
+        labs("Consommation de paquets par personne")
+      
+    } else if (input$theme == "tax_rate")  {
+        xlab("Années") + ylab("Pourcentage") +
+        ggtitle("Taxe par rapport au prix de vente")
+      
+    } else if (input$theme == "tax_revenue")  {
+      autoplot(theme()) +
+        xlab("Années") + ylab("Dollars")+
+        ggtitle("Revenu brut des taxes sur la vente de tabac")
+      
+    } else if (input$theme == "pack_cost")  {
+      autoplot(theme()) +
+        xlab("Années") + ylab("Dollars")+
+        ggtitle("Prix moyen du paquet")
+      
+    } else if (input$theme == "famille")  {
+      autoplot(theme(), facets=TRUE) +
+        xlab("Années") + ylab("Numéro de la réponse") +
+        scale_color_manual(labels = c("Statut matrimonial (1:Marrié, 2:Divorce, 3:Veuf, 4:Séparé, 5:Jamais marrie, 6:En couple non marrie)", 
+                                      "Enceinte (1:Oui)", 
+                                      "Nombre d'adultes dans le foyer", 
+                                      "Nombre d'enfants dans le foyer",
+                                      "Nombre d'enfants dans le foyer (0:0, 5: >5 enfant)"), values = c(1, 2, 3, 4, 5, 6,7))
+      
+    } else if (input$theme == "age")  {
+      autoplot(theme(), facets=TRUE) +
+        xlab("Années") + ylab("Numéro de la réponse") +
+        scale_color_manual(labels = c("Tranches d'age de 5 ans (1:18-24, 2:25-29, 3:30-34, 4:35-39, 5:40-44 , 14:80+)", "+- 65 ans (1: < 65 ans, 2: > 65 ans)", "Tranches d'age en 6 groupes (1:18-24, 2:25-34, 3:35-44, 4:45-54, 5:55-64, 6:65+)"), values = c(1, 2, 3, 4, 5, 6,7))
+      
+    } else if (input$theme == "education")  {
+      autoplot(theme(), facets=TRUE) +
+        xlab("Années") + ylab("Numéro de la réponse") +
+        scale_color_manual(labels = c("Education (1:Jamais alle a l'ecole, 2:Elementaire, 3:Un peu lycee, 4:Fini lycee)", 
+                                      "Diplomes (1:Aucun, 2:Bac, 3:Ens.Sup. sans diplome, 4:Ens.Sup. avec diplome)",
+                                      "Emploi (1:Salarie, 2:Auto-entrepreneur, 3:Chomeur >1an, 4:Chomeur <1an, 5:Personne au foyer, 6:Etudiant, 7:Retraite, 8:Incapacite a travailler)"), values = c(1, 2, 3, 4, 5, 6,7))
+      
+    } else if (input$theme == "finances")  {
+      autoplot(theme(), facets=TRUE) +
+        xlab("Années") + ylab("Numéro de la réponse") +
+        scale_color_manual(labels = c("Revenus (1:	< 10 000,	2:	10 - 15 000,	3:	15 - 20 000,	4:	20 - 25 000,	5:	25 - 35 000,	6:	35 - 50 000,	7:	50 - 75  000,	8:	75 000 ++)", 
+                                      "Revenus (1:	< 15 000,	2:	15 - 25 000,	3:	25 - 35 000,	4:	35 - 50 000,	5:	50 000 ++)",
+                                      "Logement (1:	Proprietaire,	2:	Locataire,	3:	Autre)"), values = c(1, 2, 3, 4, 5, 6,7))
+    } else if (input$theme == "sante1")  {
+      autoplot(theme()[, c("POORHLTH", "MENTHLTH", "QLMENTL2", "QLSTRES2")], facets=TRUE) +
+        xlab("Années") + ylab("Nombre de jours") +
+        scale_color_manual(labels = c("Pauvre sante physique ou mentale", 
+                                      "Pauvre sante mentale",
+                                      "Depressif", "Anxieux"), values = c(1, 2, 3, 4, 5, 6,7))
+    }
+    } else if (input$theme == "sante2")  {
+      autoplot(theme()[, c("ADDEPEV2", "EMTSUPRT", "LSATISFY")], facets=TRUE) +
+        xlab("Années") + ylab("Numéro de la réponse") +
+        scale_color_manual(labels = c("A ete dit depressif (1:Oui, 0:Non)", 
+                                      "A un support emotionnel (1: Toujours, 2: Souvent, 3:	Parfois,	4: Rarement,	5:	Jamais)",
+                                      "Satisfaction avec la vie (1:	Très satisfait,	2:	Satisfait,	3:	Insatisfait,	4:	Très insatisfait)"), values = c(1, 2, 3, 4, 5, 6,7))
+    }
+  
+)
+
+plotOutput("plot1", height = "600px")
+```
+
+### ACF
+
+```{r}
+inputPanel(
+  shiny::selectInput("theme", "Choose a state:",
+                  list(`Consommation tabac` = list("tabac","pack_conso"),
+                       `Prix tabac` = list("tax_rate", "tax_revenue", "pack_cost"),
+                       `Socio-demographie` = list("famille", "education", "finances"),
+                       `Sante` = list("sante")),
+                  selected = "pack_conso")
+)
+```
