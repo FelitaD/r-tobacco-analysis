@@ -175,3 +175,37 @@ acf(PMS_ts_interpol)
 ```
 each ACF figure includes a pair of blue, horizontal, dashed lines representing lag-wise 95% confidence intervals centered at zero. These are used for determining the statistical significance of an individual autocorrelation estimate at a given lag versus a null value of zero, i.e., no autocorrelation at 
 
+```{r}
+# Donnees aggregees par jour
+autoplot(tabac[, "SMOKE100"]) + xlab("Annee") + ylab("Pourcentage ayant repondu 'oui'") +
+  ggtitle("Avez-vous fume plus de 100 cigarettes dans votre vie ?")
+# Donnees aggregees par mois et trimestre
+smoke100_month <- apply.monthly(tabac[, "SMOKE100"],FUN=mean)
+smoke100_quarter <- apply.quarterly(tabac,FUN=mean)
+
+trend = ma(smoke100_month, order = 4, centre = T)
+plot(as.ts(smoke100_month))
+lines(trend)
+plot(as.ts(trend))
+
+head(ma(smoke100_month, 5), n=10)
+tail(ma(smoke100_month, 5), n=10)
+ma5 <- ma(smoke100_month, 5)
+length(ma5)
+ma5[5:15]
+ma5[370:385]
+
+plot(as.ts(timeserie_beer))
+lines(trend_beer)
+
+autoplot(smoke100_month) + xlab("Annee") + ylab("Pourcentage ayant repondu 'oui'") +
+  ggtitle("Avez-vous fume plus de 100 cigarettes dans votre vie ?")
+
+autoplot(ts(smoke100_quarter), series="SMOKE100") +
+  autolayer(ma(smoke100_quarter, 4), series="5-MA") +
+  xlab("Temps") + ylab("Taux de reponse 'Oui' ") +
+  ggtitle("Avez-vous fume plus de 100 cigarettes dans votre vie ?")
+
+frequency(smoke100_month)
+which.max(smoke100_quarter)
+```

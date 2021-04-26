@@ -50,6 +50,13 @@ save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
       summarise_all(mean, na.rm = TRUE)
     brfss_dates <- as.Date(brfss_m$IDATE, format = "%Y-%m-%d")
 
+    age_m <- brfss_m[, c("X_AGEG5YR", "X_AGE65YR", "X_AGE_G")]
+    famille_m <- brfss_m[, c("MARITAL", "PREGNANT", "NUMADULT", "CHILDREN", "X_CHLDCNT")]
+    education_m <- brfss_m[, c("EDUCA", "X_EDUCAG", "EMPLOY1")]
+    finances_m <- brfss_m[, c("INCOME2", "X_INCOMG", "RENTHOM1")]
+    tabac_m <- brfss_m[, c("SMOKE100", "SMOKDAY2", "STOPSMK2", "LASTSMK2", "USENOW3", "X_SMOKER3", "X_RFSMOK3")]
+    sante_m <- brfss_m[, c("POORHLTH", "MENTHLTH", "QLMENTL2", "QLSTRES2", "ADDEPEV2", "EMTSUPRT", "LSATISFY")] 
+    
     tax_burden <- data_tax_burden %>% select(Year, SubMeasureDesc, Data_Value, Data_Value_Unit)
     tax_m <- tax_burden  %>%
       group_by(SubMeasureDesc, Year) %>% 
@@ -65,13 +72,6 @@ save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
     pack_cost_m <- tax_m[tax_m$SubMeasureDesc == "Average Cost per pack",]
     pack_cost_m <- pack_cost_m[,3]
     
-    age_m <- brfss_m[, c("X_AGEG5YR", "X_AGE65YR", "X_AGE_G")]
-    famille_m <- brfss_m[, c("MARITAL", "PREGNANT", "NUMADULT", "CHILDREN", "X_CHLDCNT")]
-    education_m <- brfss_m[, c("EDUCA", "X_EDUCAG", "EMPLOY1")]
-    finances_m <- brfss_m[, c("INCOME2", "X_INCOMG", "RENTHOM1")]
-    tabac_m <- brfss_m[, c("SMOKE100", "SMOKDAY2", "STOPSMK2", "LASTSMK2", "USENOW3", "X_SMOKER3", "X_RFSMOK3")]
-    sante_m <- brfss_m[, c("POORHLTH", "MENTHLTH", "QLMENTL2", "QLSTRES2", "ADDEPEV2", "EMTSUPRT", "LSATISFY")] 
-    
     tax_rate <- xts(tax_rate_m, order.by=tax_dates)
     tax_revenue <- xts(tax_revenue_m, order.by=tax_dates)
     pack_conso <- xts(pack_conso_m, order.by=tax_dates)
@@ -85,6 +85,11 @@ save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
     sante1 <- sante[, c("POORHLTH", "MENTHLTH", "QLMENTL2", "QLSTRES2")]
     sante2 <- sante[, c("ADDEPEV2", "EMTSUPRT", "LSATISFY")]
 ```
+
+```{r}
+plot(as.ts(tabac))
+```
+
 ## Detection des tendances, saisonnalite et cyclicite & Detection du White Noise
 
 > Trends induce positive correlations in the early lags.
@@ -185,6 +190,21 @@ ts_ggplot(t, title="Evolution de la santé mentale des répondants", subtitle="F
   theme_tsbox() +
   scale_color_tsbox() # ts_ggplot marche aussi avec xts
 ```
+
+```{r}
+autoplot(tabac, series="SMOKE100") +
+  autolayer(ma(tabac,5), series="5-MA") +
+  xlab("Year") + ylab("GWh") +
+  ggtitle("Annual electricity sales: South Australia") +
+  scale_colour_manual(values=c("Data"="grey50","5-MA"="red"),
+                      breaks=c("Data","5-MA"))
+```
+
+```{r}
+
+```
+
+
 
 
 

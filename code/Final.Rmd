@@ -84,8 +84,14 @@ tableOutput("table")
 ```
 
 # Times Series
- 
-## Exploration
+## Exploration donnees brutes et decomposition 
+
+$$y{t} = S{t} + T{t} + R{t}$$
+```{r}
+ts_ggplot(cbind(as.ts(tabac[,2]), as.ts(sante[,6])))
+```
+
+## Decomposition : Focus sur le Trend cycle 
 
 ```{r}
 inputPanel(
@@ -94,48 +100,76 @@ inputPanel(
                        `Prix tabac` = list("tax_rate", "tax_revenue", "pack_cost"),
                        `Socio-demographie` = list("famille", "education", "finances", "age"),
                        `Sante` = list("sante1", "sante2")),
-                  selected = "tabac")
+                  selected = "tabac"),
 
-  # shiny::selectInput("variable2", "2eme variable", # lorsque les time series sont multivaries
-  #                 list(`Tabac` = list("SMOKE100","SMOKDAY2", "STOPSMK2", "LASTSMK2", "USENOW3", "X_SMOKER3", "X_RFSMOK3"),
-  #                      `Prix tabac` = list("tax_rate", "tax_revenue", "pack_cost"),
-  #                      `Socio-demographie` = list("famille", "education", "finances"),
-  #                      `Sante` = list("sante")),
-  #                 selected = "pack_conso")
+  shiny::selectInput("variable", "Variable", # lorsque les time series sont multivaries
+                  list(`Tabac` = list("SMOKE100","SMOKDAY2", "STOPSMK2", "LASTSMK2", "USENOW3", "X_SMOKER3", "X_RFSMOK3"),
+                       `Prix tabac` = list("tax_rate", "tax_revenue", "pack_cost"),
+                       `Socio-demographie` = list("famille", "education", "finances"),
+                       `Sante` = list("sante")),
+                  selected = "pack_conso")
 )
 ```
 
-```{r eval=FALSE}
-autoplot(sante, facets=TRUE) +
-  xlab("Années") + ylab("Numéro de la réponse") +
-  ggtitle("Taxe par rapport au prix de vente") +
-  ggplot2::theme(legend.direction = "horizontal",
-                 legend.title = element_blank(),
-                 legend.text = element_text(size = 5),
-                 legend.position="bottom")
-   
-```
+```{r}
+tabac2 <- apply.quarterly(tabac[,2],FUN=mean)
+age2 <- apply.quarterly(age[,2],FUN=mean)
 
+ma_tabac2 <- ma(tabac2, 4)
+plot(ma_tabac2)
+ma_age2 <- ma(age2, 4)
+plot(ma_age2)
+
+autoplot(cbind(ma_tabac2, ma_age2))
+
+bind <- cbind(tabac[,2], age[,2])
+bind[,1]
+autoplot(bind, facets=FALSE) +
+  autolayer(ma(bind[,1:2], 4), series="5-MA")
+```
 
 ```{r}
 theme <- reactive({ get(input$theme) })
 
 output$plot1 <- renderPlot({
     if (input$theme == "tabac") {
-      autoplot(theme(), facets=TRUE) +
-        xlab("Années") + ylab("Numéro de la réponse") +
-        ggtitle("Réponses aux questions concernant le tabagisme") +
-        scale_color_manual(labels = c("Fumé au moins 100 cigarettes dans sa vie (1:Oui)",
-                                      "Fréquence (1:quotidien - 3:jamais)",
-                                      "A arrêté dans l'année (1:Oui)",
-                                      "Interval depuis la dernière cigarette (1:<1 mois, 4:6-12 mois, 7:>10 ans)",
-                                      "Utilise des substitut (1:quotidien - 3:jamais)s",
-                                      "Statut fumeur (1:quotidien, 2:occasionnel, 3:ancien, 4:non-fumeur) "), values = c(1, 2, 3, 4, 5, 6,7)) +
-  ggplot2::theme(legend.direction = "horizontal",
-                 legend.title = element_blank(),
-                 legend.text = element_text(size = 6),
-                 legend.position="bottom")
-      
+      theme <- apply.quarterly(theme()[, input$variable],FUN=mean)
+      if (input$variable == "SMOKE100") {
+        autoplot(ts(theme)[, input$variable], facets=FALSE) +
+          autolayer(ma(theme, 4), series="5-MA") +
+          xlab("Temps") + ylab("Taux moyen de reponse 'Oui' ") +
+          ggtitle("Avez-vous fume plus de 100 cigarettes dans votre vie (1: Oui) ?")
+      } else if (input$variable == "SMOKDAY2") {
+         autoplot(ts(theme)[, input$variable], facets=FALSE) +
+          autolayer(ma(theme, 4), series="5-MA") +
+          xlab("Temps") + ylab("Numéro de la réponse moyen") +
+          ggtitle("Fréquence (1:quotidien, 2:quelques jours, 3:jamais)")
+      } else if (input$variable == "STOPSMK2") {
+         autoplot(ts(theme)[, input$variable], facets=FALSE) +
+          autolayer(ma(theme, 4), series="5-MA") +
+          xlab("Temps") + ylab("Taux moyen de reponse 'Oui' ") +
+          ggtitle("A arrêté dans l'année (1:Oui)")
+      } else if (input$variable == "LASTSMK2") {
+         autoplot(ts(theme)[, input$variable], facets=FALSE) +
+          autolayer(ma(theme, 4), series="5-MA") +
+          xlab("Temps") + ylab("Numéro de la réponse moyen") +
+          ggtitle("Interval depuis la dernière cigarette (1:<1 mois, 4:6-12 mois, 7:>10 ans)")
+      } else if (input$variable == "USENOW3") {
+         autoplot(ts(theme)[, input$variable], facets=FALSE) +
+          autolayer(ma(theme, 4), series="5-MA") +
+          xlab("Temps") + ylab("Numéro de la réponse moyen") +
+          ggtitle("Utilise des substitut (1:quotidien, 2:occasionnel, 3:jamais)")
+      } else if (input$variable == "X_SMOKER3") {
+         autoplot(ts(theme)[, input$variable], facets=FALSE) +
+          autolayer(ma(theme, 4), series="5-MA") +
+          xlab("Temps") + ylab("Numéro de la réponse moyen") +
+          ggtitle("Statut fumeur (1:quotidien, 2:occasionnel, 3:ancien, 4:non-fumeur) ")
+      } else if (input$variable == "X_RFSMOK3") {
+         autoplot(ts(theme)[, input$variable], facets=FALSE) +
+          autolayer(ma(theme, 4), series="5-MA") +
+          xlab("Temps") + ylab("Etes vous fumeur  (1: Oui) ?") +
+          ggtitle("Numero de la reponse moyen")
+      }
     } else if (input$theme == "pack_conso")  {
       autoplot(theme()) +
         xlab("Années") + ylab("Nombre de paquets") +
@@ -144,7 +178,6 @@ output$plot1 <- renderPlot({
                        legend.title = element_blank(),
                        legend.text = element_text(size = 5),
                        legend.position="bottom")
-      
     } else if (input$theme == "tax_rate")  {
       autoplot(theme()) +
         xlab("Années") + ylab("Pourcentage") +
@@ -153,7 +186,6 @@ output$plot1 <- renderPlot({
                        legend.title = element_blank(),
                        legend.text = element_text(size = 5),
                        legend.position="bottom")
-      
     } else if (input$theme == "tax_revenue")  {
       autoplot(theme()) +
         xlab("Années") + ylab("Dollars")+
@@ -162,7 +194,6 @@ output$plot1 <- renderPlot({
                        legend.title = element_blank(),
                        legend.text = element_text(size = 5),
                        legend.position="bottom")
-      
     } else if (input$theme == "pack_cost")  {
       autoplot(theme()) +
         xlab("Années") + ylab("Dollars") +
@@ -173,6 +204,7 @@ output$plot1 <- renderPlot({
                        legend.position="bottom")
       
     } else if (input$theme == "famille")  {
+      if (input$variable == "MARITAL")
       autoplot(theme(), facets=TRUE) +
         xlab("Années") + ylab("Numéro de la réponse") +
         ggtitle("Réponses aux questions concernant la famille")  +
@@ -264,8 +296,8 @@ plotOutput("plot1")
 
 ### Regression Dynamique
 
-- Selection automatique du meilleur modele pour les erreurs
-- La differenciation est faite pendant le process mais resultat exprime selon les donnees originales
+<!-- - Selection automatique du meilleur modele pour les erreurs -->
+<!-- - La differenciation est faite pendant le process mais resultat exprime selon les donnees originales -->
 
 # ```{r}
 # fit <- auto.arima(smoke100, xreg=)

@@ -1,0 +1,90 @@
+---
+title: "Tabagisme"
+subtitle: "Analyse multivariee"
+author: "Meyssa Beddar & Félita Donor"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: menu
+    source_code: embed
+runtime: shiny
+---
+
+```{r global, include=FALSE}
+# load data in 'global' chunk so it can be shared by all users of the dashboard
+library(correlationfunnel)
+library(tidyquant)
+library(plotly)
+library(tidyverse)
+library(shiny)
+library(tidyverse)
+library(scales)
+library(reshape2)
+library(ggplot2)
+library(xts)
+library(zoo)
+library(tsbox)
+library(forecast)
+library(ggplot2)
+library(psych)
+library(fpp2)
+library(rsconnect)
+#load("/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData")
+```
+
+Inputs {.sidebar}
+-----------------------------------------------------------------------
+
+```{r}
+inputPanel(
+  shiny::selectInput("theme1", "Thème 1",
+                  list(`Consommation tabac` = list("tabac","pack_conso"),
+                       `Prix tabac` = list("tax_rate", "tax_revenue", "pack_cost"),
+                       `Socio-demographie` = list("famille", "education", "finances", "age"),
+                       `Sante` = list("sante1", "sante2")),
+                  selected = "tabac"),
+
+  shiny::selectInput("variable1", "Variable", # lorsque les time series sont multivaries
+                  list(`Tabac` = list("SMOKE100","SMOKDAY2", "STOPSMK2", "LASTSMK2", "USENOW3", "X_SMOKER3", "X_RFSMOK3"),
+                       `Prix tabac` = list("tax_rate", "tax_revenue", "pack_cost"),
+                       `Socio-demographie` = list("famille", "education", "finances"),
+                       `Sante` = list("sante")),
+                  selected = "pack_conso"),
+  
+  shiny::selectInput("theme2", "Thème 2",
+                  list(`Consommation tabac` = list("tabac","pack_conso"),
+                       `Prix tabac` = list("tax_rate", "tax_revenue", "pack_cost"),
+                       `Socio-demographie` = list("famille", "education", "finances", "age"),
+                       `Sante` = list("sante1", "sante2")),
+                  selected = "tabac"),
+
+  shiny::selectInput("variable2", "Variable", # lorsque les time series sont multivaries
+                  list(`Tabac` = list("SMOKE100","SMOKDAY2", "STOPSMK2", "LASTSMK2", "USENOW3", "X_SMOKER3", "X_RFSMOK3"),
+                       `Prix tabac` = list("tax_rate", "tax_revenue", "pack_cost"),
+                       `Socio-demographie` = list("famille", "education", "finances"),
+                       `Sante` = list("sante")),
+                  selected = "pack_conso")
+)
+```
+
+
+Row {data-height=350}
+-------------------------------------
+
+### Chart 1
+
+```{r}
+```
+   
+### Chart 2
+
+```{r}
+```   
+    
+Row {data-height=650}
+-------------------------------------
+
+### Chart 3
+
+```{r}
+```
