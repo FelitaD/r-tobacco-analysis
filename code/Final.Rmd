@@ -112,10 +112,10 @@ inputPanel(
 ```
 
 ```{r}
-tabac2 <- apply.quarterly(tabac[,2],FUN=mean)
-age2 <- apply.quarterly(age[,2],FUN=mean)
+tabac2 <- apply.monthly(tabac[,2],FUN=mean)
+age2 <- apply.monthly(age[,2],FUN=mean)
 
-ma_tabac2 <- ma(tabac2, 4)
+ma_tabac2 <- ma(tabac2, 5)
 plot(ma_tabac2)
 ma_age2 <- ma(age2, 4)
 plot(ma_age2)
@@ -331,3 +331,76 @@ plotOutput("plot1")
 # points(AR_forecast + 2*AR_forecast_se, type = "l", col = 2, lty = 2)
 # ```
 
+    } else if (input$theme1 == "education")  {
+      autoplot(theme1(), facets=TRUE) +
+        xlab("Années") + ylab("Numéro de la réponse") +
+        ggplot2::theme(legend.direction = "vertical",
+                       legend.title = element_blank(),
+                       legend.text = element_text(size = 8),
+                       legend.position="bottom") +
+        ggtitle("Réponses aux questions concernant l'education et l'emploi") +
+        scale_color_manual(labels = c("Education (1:Jamais alle a l'ecole, 2:Elementaire, 3:Un peu lycee, 4:Fini lycee)", 
+                                      "Diplomes (1:Aucun, 2:Bac, 3:Ens.Sup. sans diplome, 4:Ens.Sup. avec diplome)",
+                                      "Emploi (1:Salarie, 2:Auto-entrepreneur, 3:Chomeur >1an, 4:Chomeur <1an, 5:Personne au foyer, 6:Etudiant, 7:Retraite, 8:Incapacite a travailler)"), values = c(1, 2, 3, 4, 5, 6,7))
+      
+    } else if (input$theme1 == "finances")  {
+      autoplot(theme1(), facets=TRUE) +
+        xlab("Années") + ylab("Numéro de la réponse") +
+        ggtitle("Réponses aux questions concernant la situation financiere") +
+        ggplot2::theme(legend.direction = "vertical",
+                       legend.title = element_blank(),
+                       legend.text = element_text(size = 8),
+                       legend.position="bottom") +
+        scale_color_manual(labels = c("Revenus (1:	< 10 000,	2:	10 - 15 000,	3:	15 - 20 000,	4:	20 - 25 000,	5:	25 - 35 000,	6:	35 - 50 000,	7:	50 - 75  000,	8:	75 000 ++)", 
+                                      "Revenus (1:	< 15 000,	2:	15 - 25 000,	3:	25 - 35 000,	4:	35 - 50 000,	5:	50 000 ++)",
+                                      "Logement (1:	Proprietaire,	2:	Locataire,	3:	Autre)"), values = c(1, 2, 3, 4, 5, 6,7))
+      
+    } else if (input$theme1 == "sante1")  {
+      autoplot(theme1(), facets=TRUE) +
+        xlab("Années") + ylab("Nombre de jours") +
+        ggtitle("Réponses aux questions concernant la sante mentale en nombre de jours") +
+        ggplot2::theme(legend.direction = "vertical",
+                       legend.title = element_blank(),
+                       legend.text = element_text(size = 8),
+                       legend.position="bottom") +
+        scale_color_manual(labels = c("Pauvre sante physique ou mentale", 
+                                      "Pauvre sante mentale",
+                                      "Depressif", "Anxieux"), values = c(1, 2, 3, 4, 5, 6,7))
+      
+    } else if (input$theme1 == "sante2")  {
+      autoplot(theme1(), facets=TRUE) +
+        xlab("Années") + ylab("Numéro de la réponse") +
+        ggtitle("Réponses aux questions concernant la sante mentale") +
+        ggplot2::theme(legend.direction = "vertical",
+                       legend.title = element_blank(),
+                       legend.text = element_text(size = 8),
+                       legend.position="bottom") +
+        scale_color_manual(labels = c("A ete dit depressif (1: Oui, 0: Non)", 
+                                      "A un support emotionnel (1: Toujours, 2: Souvent, 3:	Parfois,	4: Rarement,	5:	Jamais)",
+                                      "Satisfaction avec la vie (1:	Très satisfait,	2:	Satisfait,	3:	Insatisfait,	4:	Très insatisfait)"), values = c(1, 2, 3, 4, 5, 6,7))
+    }
+      
+    } else if (input$theme1 == "pack_conso")  {
+      autoplot(ts(theme1())) +
+        autolayer(ma(theme1(), 5), series="5-MA") +
+        xlab("Années") + ylab("Nombre de paquets") +
+        ggtitle("Nombre moyen de paquets consommes par personne")
+      
+    } else if (input$theme1 == "tax_rate")  {
+      autoplot(ts(theme1())) +
+        autolayer(ma(theme1(), 5), series="5-MA") +
+        xlab("Années") + ylab("Pourcentage") +
+        ggtitle("Taxe par rapport au prix de vente")
+      
+    } else if (input$theme1 == "tax_revenue")  {
+      autoplot(ts(theme1())) +
+        autolayer(ma(theme1(), 5), series="5-MA") +
+        xlab("Années") + ylab("Dollars")+
+        ggtitle("Revenu brut des taxes sur la vente de tabac")
+      
+    } else if (input$theme1 == "pack_cost")  {
+      autoplot(ts(theme1())) +
+        autolayer(ma(theme1(), 5), series="5-MA") +
+        xlab("Années") + ylab("Dollars") +
+        ggtitle("Prix moyen du paquet")
+    } 

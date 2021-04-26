@@ -190,10 +190,11 @@ plot(as.ts(trend))
 
 head(ma(smoke100_month, 5), n=10)
 tail(ma(smoke100_month, 5), n=10)
-ma5 <- ma(smoke100_month, 5)
+ma5 <- ma(smoke100_month, 50)
 length(ma5)
 ma5[5:15]
 ma5[370:385]
+plot(ma5)
 
 plot(as.ts(timeserie_beer))
 lines(trend_beer)

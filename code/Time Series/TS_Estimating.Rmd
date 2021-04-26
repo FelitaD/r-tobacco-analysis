@@ -24,8 +24,8 @@ output: html_notebook
 
 ```{r}
 ts.plot(poor_mental_ts)
-poor_mental_ts_diff <- diff(poor_mental_ts, lag = 4) # remove long term (seasonal) trends
-ts.plot(poor_mental_ts_diff)
+tabac_diff4 <- diff(tabac, lag = 4) # remove long term (seasonal) trends
+ts.plot(tabac_diff4)
 ```
 
 Base pour d'autres modeles de time series

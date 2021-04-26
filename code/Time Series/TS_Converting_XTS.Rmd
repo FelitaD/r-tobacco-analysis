@@ -50,7 +50,7 @@ save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
       summarise_all(mean, na.rm = TRUE)
     brfss_dates <- as.Date(brfss_m$IDATE, format = "%Y-%m-%d")
 
-    age_m <- brfss_m[, c("X_AGEG5YR", "X_AGE65YR", "X_AGE_G")]
+    age_m <- brfss_m[, c("X_AGEG5YR", "X_AGE65YR", "X_AGE_G", "SEX")]
     famille_m <- brfss_m[, c("MARITAL", "PREGNANT", "NUMADULT", "CHILDREN", "X_CHLDCNT")]
     education_m <- brfss_m[, c("EDUCA", "X_EDUCAG", "EMPLOY1")]
     finances_m <- brfss_m[, c("INCOME2", "X_INCOMG", "RENTHOM1")]
@@ -76,6 +76,7 @@ save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
     tax_revenue <- xts(tax_revenue_m, order.by=tax_dates)
     pack_conso <- xts(pack_conso_m, order.by=tax_dates)
     pack_cost <- xts(pack_cost_m, order.by=tax_dates)
+    
     age <- xts(age_m, order.by=brfss_dates)
     famille <- xts(famille_m, order.by=brfss_dates)
     education <- xts(education_m, order.by=brfss_dates)
@@ -87,7 +88,30 @@ save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
 ```
 
 ```{r}
-plot(as.ts(tabac))
+data/stats::lag(finances,-1) - 1
+autoplot(diff(finances)/finances[-nrow(finances),] * 100, facets = TRUE)
+ts_ggplot(diff(tax_rate)/tax_rate[-nrow(tax_rate),] * 100)
+```
+
+
+- Remplacement des donnees de 2010 par interpolation lineaire
+
+```{r}
+original_df <- age
+times.init <- as.Date(original_df$DATE, format = "%Y-%m-%d")
+new_df <-xts(original_df[,2:4],times.init)
+
+interpol <- na.approx(new_df, xout=seq(min(times.init), max(times.init), "day"))
+ts.plot(interpol)
+
+PMS_ts_interpol <- ts_ts(PMS_xts_interpol)
+ts_ggplot(PMS_xts_interpol, title="Evolution de la santé mentale des répondants", subtitle="Fumeurs et non fumeurs") +
+  theme_tsbox() +
+  scale_color_tsbox() # ts_ggplot marche aussi avec xts
+```
+
+```{r}
+autoplot(famille)
 ```
 
 ## Detection des tendances, saisonnalite et cyclicite & Detection du White Noise
@@ -210,21 +234,7 @@ autoplot(tabac, series="SMOKE100") +
 
 
 
-- Remplacement des donnees de 2010 par interpolation lineaire
 
-```{r}
-original_df <-PMS_mean[!startsWith(PMS_mean$IDATE,"2010"),]
-times.init <- as.Date(original_df$DATE, format = "%Y-%m-%d")
-new_df <-xts(original_df[,2:4],times.init)
-
-PMS_xts_interpol <- na.approx(new_df, xout=seq(min(times.init), max(times.init), "day"))
-ts.plot(PMS_xts_interpol)
-
-PMS_ts_interpol <- ts_ts(PMS_xts_interpol)
-ts_ggplot(PMS_xts_interpol, title="Evolution de la santé mentale des répondants", subtitle="Fumeurs et non fumeurs") +
-  theme_tsbox() +
-  scale_color_tsbox() # ts_ggplot marche aussi avec xts
-```
 
 > Tendance : en augmentation
 > Seasonality : peut-etre
