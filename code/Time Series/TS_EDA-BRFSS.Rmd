@@ -18,11 +18,13 @@ library(tidyverse)
 library(ggplot2)
 library(psych)
 library(fpp2)
+```
 
+```{r eval=FALSE}
 save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
 ```
 
-```{r}
+```{r eval=FALSE}
   data_tax_burden <- read_delim('/Users/lmp/CNAM/Stats/Mini-memoire/data/The_Tax_Burden_on_Tobacco__1970-2019.csv', delim = ";")
   str(data_tax_burden)
   dim(data_tax_burden)
@@ -80,6 +82,8 @@ save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
     finances <- xts(finances_m, order.by=brfss_dates)
     tabac <- xts(tabac_m, order.by=brfss_dates)
     sante <- xts(sante_m, order.by=brfss_dates)
+    sante1 <- sante[, c("POORHLTH", "MENTHLTH", "QLMENTL2", "QLSTRES2")]
+    sante2 <- sante[, c("ADDEPEV2", "EMTSUPRT", "LSATISFY")]
 ```
 ## Detection des tendances, saisonnalite et cyclicite & Detection du White Noise
 
@@ -101,6 +105,8 @@ save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
   autoplot(tabac, facets = TRUE) + # cyclic, no trend
     xlab("Années") + ylab("Pourcentage") +
     ggtitle("Evolution de la taxe par rapport au prix de vente") +
+    theme_bw() +
+    theme(legend.position="bottom")
 
   gglagplot(tabac) 
   ggAcf(tax_rate) # pas cyclique

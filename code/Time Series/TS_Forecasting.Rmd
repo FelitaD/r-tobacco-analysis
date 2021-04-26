@@ -2,7 +2,127 @@
 title: "Forecast"
 output: html_document
 ---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(scales)
+library(reshape2)
+library(ggplot2)
+library(xts)
+library(zoo)
+library(tsbox)
+library(forecast)
+library(tidyverse)
+library(ggplot2)
+library(psych)
+library(fpp2)
+```
+## ARIMAX
 
+“Order of integration” is a summary statistic used to describe a unit root process in time series analysis. Specifically, it tells you the minimum number of differences needed to get a stationary series.
+
+ARMAX -> integration = 0
+ARIMAX
+
+Difference avec ARMA : “X” and its coefficient β
+- β is a coefficient which will be estimated based on the model selection and the data
+- "X" exogeneous variable
+
+
+## ARIMA
+
+#### Autoregression
+
+Chaque observation est regressee sur la precedente
+Le modele comprend aussi :
+  - RW (slope = 1, non stationnaire, forte persistence, Acf tend vers 0 lentement)
+
+(Today - Mean) = Slope * (Yesterday - Mean) + Noise
+
+Slope (phi) between -1 and 1
+- if slope = 0 -> process Y is WN
+- if slope ≠ 0 -> Y dependant on both current noise and previous observation + process Yt autocorrelated
+- large values of slope phi lead to greater autocorrelation
+- negative values of slope result in oscillatory time series
+- if slope = 1 and mean = 0 -> process Y is a RW (Today = Yesterday + Noise) which is not stationary
+- if slope close to 1 -> AR more persistent, Acf revert to 0 quickly -> values far in the past hav little impact
+
+> Independant variable : sante mentale
+> Dependant variable : tabac
+
+#### Autoregression 2 : y a t il de la persistence ? 
+ > Nombre de fumeurs baisse-t-il de maniere persistente ?
+
+Persistence is defined by a high correlation between an observation and its lag, while anti-persistence is defined by a large amount of variation between an observation and its lag.
+
+```{r}
+# Copy and paste the slope (ar1) estimate
+0.3140
+
+# Copy and paste the slope mean (intercept) estimate
+0.4807
+
+# Copy and paste the innovation variance (sigma^2) estimate
+0.002064
+
+# Fit the AR model to AirPassengers
+AR <- arima(smoke100, order = c(1,0,0))
+print(AR)
+
+# Run the following commands to plot the series and fitted values
+ts.plot(smoke100)
+AR_fitted <- smoke100 - residuals(AR)
+points(AR_fitted, type = "l", col = 2, lty = 2)
+```
+#### Prediction a partir du AR
+
+```{r}
+# Fit an AR model to Nile
+AR_fit <- arima(smoke100, order  = c(1, 0, 0))
+print(AR_fit)
+
+# Use predict() to make a 1-step forecast
+predict_AR <- predict(AR_fit)
+
+# Obtain the 1-step forecast using $pred[1]
+predict_AR$pred[1]
+
+# Use predict to make 1-step through 10-step forecasts
+predict(AR_fit, n.ahead = 10)
+
+# Run to plot the Nile series plus the forecast and 95% prediction intervals
+ts.plot(smoke100, xlim = c(1996, 2050))
+AR_forecast <- predict(AR_fit, n.ahead = 10000)$pred 
+AR_forecast_se <- predict(AR_fit, n.ahead = 10000)$se
+points(AR_forecast, type = "l", col = 2)
+points(AR_forecast - 2*AR_forecast_se, type = "l", col = 2, lty = 2)
+points(AR_forecast + 2*AR_forecast_se, type = "l", col = 2, lty = 2)
+
+```
+#### Auto modele
+
+```{r}
+# Fit an automatic ARIMA model to the austa series
+fit <- auto.arima(smoke100)
+
+# Check that the residuals look like white noise
+checkresiduals(fit)
+residualsok <- TRUE
+
+# Summarize the model
+summary(fit)
+
+# Find the AICc value and the number of differences used
+
+
+# Plot forecasts of fit
+fit %>% forecast(h = 10) %>% autoplot()
+```
+
+
+
+## Stationnary or not 
+mean, variance, covariance constant over time
 ```{r}
 # Set up forecast functions for ETS and ARIMA models
 fets <- function(x, h) {

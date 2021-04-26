@@ -40,6 +40,7 @@ ARIMA(p, d, q)
 ```{r}
 arima(poor_mental_ts_diff, order=c(0, 0, 0))
 ```
+
 ```{r}
 lapply(poor_mental_ts_diff, mean, na.rm = TRUE)
 lapply(poor_mental_ts_diff, var, na.rm = TRUE)
