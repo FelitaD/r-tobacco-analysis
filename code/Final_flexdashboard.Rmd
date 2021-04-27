@@ -86,7 +86,6 @@ textOutput("text")
 ```
 
 
-
 Choix de séries temporelles stationnaires
 ===================================== 
 Row {.tabset}
@@ -159,6 +158,7 @@ output$console14 <- renderPrint({
     })
 verbatimTextOutput("console14")
 ```
+
 #### Time serie differenciee (stationnaire)
 ```{r}
 output$plotly1 <- renderPlotly({
@@ -218,20 +218,13 @@ verbatimTextOutput("console8")
 ```
 
 ### Test de saisonnalité 
-```{r eval = FALSE}
-variable <- sante[, "LSATISFY"]
-variable %>% log() %>% nsdiffs()
-variable %>% log() %>% diff(lag=12) %>% ndiffs()
-```
-
 ```{r}
-theme_1 <- reactive({ get(input$theme1) })
-theme_var_1 <- reactive({ get(input$theme1)[,input$variable1] })
-
-output$console12 <- renderPrint({
-  ndiffs(tabac[, "SMOKE100"])
+output$console11 <- renderPrint({
+  s <- theme1()[, input$variable1]
+  s %>% log() %>% nsdiffs()
+  s %>% log() %>% diff(lag=12) %>% ndiffs()
   })
-verbatimTextOutput("console12")
+verbatimTextOutput("console11")
 ```
 ### Stabilisation variance (log) 
 
@@ -267,34 +260,23 @@ tableOutput("table")
 
 ### Lag plot
 ```{r}
-output$plotly3 <- renderPlotly({
+output$plot9 <- renderPlot({
   dat <- theme1()[,input$variable1]
-  d <- diff(dat)
-  # gglagplot(d) 
+  gglagplot(dat)
 })
-plotlyOutput("plotly3")
+plotOutput("plot9")
 ```
 
 ### Autocorrelation
 ```{r}
-  d <- diff(apply.quarterly(education$EMPLOY1, FUN=mean), diff=2)
-  ggAcf(d)
-```
-
-### Comparaison des tendances entre 2 series
-
-```{r}
-output$plot3 <- renderPlot({
-
-  ma1 <- ma(diff(apply.monthly(theme_var_1(), FUN=mean)), 5)
-  ma2 <- ma(apply.monthly(theme_var_2(), FUN=mean), 5)
-
-  autoplot(cbind(ma1, ma2))
+output$plot6 <- renderPlot({
+  dat <- theme1()[,input$variable1]
+  ACF_serie_differenciee <- diff(dat)
+  ggAcf(ACF_serie_differenciee)
 })
+plotOutput("plot6")
 
-plotOutput("plot3")
 ```
-
 
 
 Row {data-height=400}
@@ -305,6 +287,7 @@ Row {data-height=400}
 
 ```{r}
 theme1 <- reactive({ get(input$theme1) })
+theme2 <- reactive({ get(input$theme2) })
 
 output$plot1 <- renderPlot({
     if (input$theme1 == "tabac") {
@@ -571,7 +554,163 @@ plotOutput("plot2")
 ```  
     
 
-Modèle de régression dynamique {data-orientation=rows}
-=====================================  
 
-### fewwfe
+Modèle de régression dynamique {data-orientation=rows}
+=====================================
+
+Row {.tabset}
+-------------------------------------
+### Interpolation
+
+```{r}
+times.init <- as.Date(brfss_m$IDATE, format = "%Y-%m-%d")
+new_df <-xts(brfss_m[, c("SMOKE100","MARITAL","X_CHLDCNT", "X_AGE_G","SEX","X_EDUCAG","EMPLOY1", "X_INCOMG", "POORHLTH","MENTHLTH","QLMENTL2","QLSTRES2","ADDEPEV2","EMTSUPRT","LSATISFY","USENOW3")],times.init)
+
+brfss_interpol <- na.approx(new_df, xout=seq(min(times.init), max(times.init), "day"))
+
+ts_ggplot(brfss_interpol, title="Donnees BRFSS") +
+  theme_tsbox() +
+  scale_color_tsbox() # ts_ggplot marche aussi avec xts
+```
+
+### Predicteurs 1
+
+#### Socio-demographiques + Utilisation de substituts + Santé mentale
+```{r}
+output$console44 <- renderPrint({
+  xreg <- cbind(MARITAL = as.numeric(brfss_interpol[  ,"MARITAL"]),
+              X_CHLDCNT = as.numeric(brfss_interpol[, "X_CHLDCNT"]),
+              X_AGE_G = as.numeric(brfss_interpol[, "X_AGE_G"]),
+              SEX = as.numeric(brfss_interpol[, "SEX"]),
+              X_CHLDCNT = as.numeric(brfss_interpol[, "X_EDUCAG"]),
+              EMPLOY1 = as.numeric(brfss_interpol[, "EMPLOY1"]),
+              X_INCOMG = as.numeric(brfss_interpol[, "X_INCOMG"]),
+              POORHLTH = as.numeric(brfss_interpol[, "POORHLTH"]),
+              MENTHLTH = as.numeric(brfss_interpol[, "MENTHLTH"]),
+              QLMENTL2 = as.numeric(brfss_interpol[, "QLMENTL2"]),
+              QLSTRES2 = as.numeric(brfss_interpol[, "QLSTRES2"]),
+              ADDEPEV2 = as.numeric(brfss_interpol[, "ADDEPEV2"]),
+              EMTSUPRT = as.numeric(brfss_interpol[, "EMTSUPRT"]),
+              LSATISFY = as.numeric(brfss_interpol[, "LSATISFY"]),
+              USENOW3 = as.numeric(brfss_interpol[, "USENOW3"]))
+              
+  fit <- auto.arima(brfss_interpol[, "SMOKE100"], xreg = xreg)
+  print(fit)
+  })
+verbatimTextOutput("console44")
+
+```
+
+#### Coefficients
+```{r}
+output$console43 <- renderPrint({
+  xreg <- cbind(MARITAL = as.numeric(brfss_interpol[  ,"MARITAL"]),
+              X_CHLDCNT = as.numeric(brfss_interpol[, "X_CHLDCNT"]),
+              X_AGE_G = as.numeric(brfss_interpol[, "X_AGE_G"]),
+              SEX = as.numeric(brfss_interpol[, "SEX"]),
+              X_CHLDCNT = as.numeric(brfss_interpol[, "X_EDUCAG"]),
+              EMPLOY1 = as.numeric(brfss_interpol[, "EMPLOY1"]),
+              X_INCOMG = as.numeric(brfss_interpol[, "X_INCOMG"]),
+              POORHLTH = as.numeric(brfss_interpol[, "POORHLTH"]),
+              MENTHLTH = as.numeric(brfss_interpol[, "MENTHLTH"]),
+              QLMENTL2 = as.numeric(brfss_interpol[, "QLMENTL2"]),
+              QLSTRES2 = as.numeric(brfss_interpol[, "QLSTRES2"]),
+              ADDEPEV2 = as.numeric(brfss_interpol[, "ADDEPEV2"]),
+              EMTSUPRT = as.numeric(brfss_interpol[, "EMTSUPRT"]),
+              LSATISFY = as.numeric(brfss_interpol[, "LSATISFY"]),
+              USENOW3 = as.numeric(brfss_interpol[, "USENOW3"]))
+  fit <- auto.arima(brfss_interpol[, "SMOKE100"], xreg = xreg)
+  coefficients(fit)
+})
+verbatimTextOutput("console43")
+```
+
+#### Estimation
+```{r}
+output$console46 <- renderPrint({
+    xreg <- cbind(MARITAL = as.numeric(brfss_interpol[  ,"MARITAL"]),
+              X_CHLDCNT = as.numeric(brfss_interpol[, "X_CHLDCNT"]),
+              X_AGE_G = as.numeric(brfss_interpol[, "X_AGE_G"]),
+              SEX = as.numeric(brfss_interpol[, "SEX"]),
+              X_CHLDCNT = as.numeric(brfss_interpol[, "X_EDUCAG"]),
+              EMPLOY1 = as.numeric(brfss_interpol[, "EMPLOY1"]),
+              X_INCOMG = as.numeric(brfss_interpol[, "X_INCOMG"]),
+              POORHLTH = as.numeric(brfss_interpol[, "POORHLTH"]),
+              MENTHLTH = as.numeric(brfss_interpol[, "MENTHLTH"]),
+              QLMENTL2 = as.numeric(brfss_interpol[, "QLMENTL2"]),
+              QLSTRES2 = as.numeric(brfss_interpol[, "QLSTRES2"]),
+              ADDEPEV2 = as.numeric(brfss_interpol[, "ADDEPEV2"]),
+              EMTSUPRT = as.numeric(brfss_interpol[, "EMTSUPRT"]),
+              LSATISFY = as.numeric(brfss_interpol[, "LSATISFY"]),
+              USENOW3 = as.numeric(brfss_interpol[, "USENOW3"]))
+  fit <- auto.arima(brfss_interpol[, "SMOKE100"], xreg = xreg)
+  coefficients(fit)[3]
+  })
+verbatimTextOutput("console46")
+```
+
+### Predicteurs 2
+
+#### Santé mentale
+```{r}
+output$console41 <- renderPrint({
+  xreg_sante_mentale <- cbind(POORHLTH = as.numeric(brfss_interpol[, "POORHLTH"]),
+                MENTHLTH = as.numeric(brfss_interpol[, "MENTHLTH"]),
+                QLMENTL2 = as.numeric(brfss_interpol[, "QLMENTL2"]),
+                QLSTRES2 = as.numeric(brfss_interpol[, "QLSTRES2"]),
+                ADDEPEV2 = as.numeric(brfss_interpol[, "ADDEPEV2"]),
+                EMTSUPRT = as.numeric(brfss_interpol[, "EMTSUPRT"]),
+                LSATISFY = as.numeric(brfss_interpol[, "LSATISFY"]))
+                
+  fit_sante_mentale <- auto.arima(brfss_interpol[, "SMOKE100"], xreg = xreg_sante_mentale)
+  fit_sante_mentale
+})
+verbatimTextOutput("console41")
+```
+
+#### Coefficients
+```{r}
+output$console42 <- renderPrint({
+    xreg_sante_mentale <- cbind(POORHLTH = as.numeric(brfss_interpol[, "POORHLTH"]),
+                MENTHLTH = as.numeric(brfss_interpol[, "MENTHLTH"]),
+                QLMENTL2 = as.numeric(brfss_interpol[, "QLMENTL2"]),
+                QLSTRES2 = as.numeric(brfss_interpol[, "QLSTRES2"]),
+                ADDEPEV2 = as.numeric(brfss_interpol[, "ADDEPEV2"]),
+                EMTSUPRT = as.numeric(brfss_interpol[, "EMTSUPRT"]),
+                LSATISFY = as.numeric(brfss_interpol[, "LSATISFY"]))
+                
+  fit_sante_mentale <- auto.arima(brfss_interpol[, "SMOKE100"], xreg = xreg_sante_mentale)
+  coefficients(fit_sante_mentale)
+})
+verbatimTextOutput("console42")
+```
+
+#### Estimation
+```{r}
+output$console45 <- renderPrint({
+  xreg_sante_mentale <- cbind(POORHLTH = as.numeric(brfss_interpol[, "POORHLTH"]),
+            MENTHLTH = as.numeric(brfss_interpol[, "MENTHLTH"]),
+            QLMENTL2 = as.numeric(brfss_interpol[, "QLMENTL2"]),
+            QLSTRES2 = as.numeric(brfss_interpol[, "QLSTRES2"]),
+            ADDEPEV2 = as.numeric(brfss_interpol[, "ADDEPEV2"]),
+            EMTSUPRT = as.numeric(brfss_interpol[, "EMTSUPRT"]),
+            LSATISFY = as.numeric(brfss_interpol[, "LSATISFY"]))
+  fit_sante_mentale <- auto.arima(brfss_interpol[, "SMOKE100"], xreg = xreg_sante_mentale)
+  coefficients(fit_sante_mentale)[3]
+  })
+verbatimTextOutput("console45")
+```
+
+
+### Prediction 
+#### Taux de personnes ayant fume au  moins 100 cigarettes dans leur vie en fonction de la santé mentale
+```{r}
+output$plot999 <- renderPlot({
+  
+  fit <- auto.arima(brfss_interpol[, "SMOKE100"], xreg = brfss_interpol[, "MENTHLTH"], stationary = TRUE)
+  fc <- forecast(fit, xreg = rep(10, 6))
+  autoplot(fc)
+})
+
+plotOutput("plot999")
+```

@@ -77,6 +77,7 @@ save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
     pack_conso <- xts(pack_conso_m, order.by=tax_dates)
     pack_cost <- xts(pack_cost_m, order.by=tax_dates)
     
+    brfss_xts <- xts(brfss_m, order.by = brfss_dates)
     age <- xts(age_m, order.by=brfss_dates)
     famille <- xts(famille_m, order.by=brfss_dates)
     education <- xts(education_m, order.by=brfss_dates)
@@ -282,9 +283,8 @@ smoke100 <- PMS_ts_interpol[,3]
 ```{r}
 # Make a scatterplot of DAX and FTSE
 plot(smoke100, menthlth)
-
 # Make a scatterplot matrix of eu_stocks
-pairs(PMS_ts_interpol)
+pairs(age)
 
 # Convert eu_stocks to log returns
 logreturns <- diff(log(PMS_ts_interpol))
