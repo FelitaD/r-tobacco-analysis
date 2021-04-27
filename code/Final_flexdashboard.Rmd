@@ -87,11 +87,219 @@ textOutput("text")
 
 
 
-Choix de variables stationnaires
+Choix de séries temporelles stationnaires
 ===================================== 
+Row {.tabset}
+-------------------------------------
+
+### Moyennes
+
+#### Globale
+```{r}
+theme_1 <- reactive({ get(input$theme1) })
+theme_var_1 <- reactive({ get(input$theme1)[,input$variable1] })
+
+output$console4 <- renderPrint({
+  a <- theme1()[, input$variable1]
+  b <- a[!is.na(a),]
+  lapply(b, FUN=mean, na.rm = TRUE)
+  })
+verbatimTextOutput("console4")
+```
+
+#### Debut
+```{r}
+output$console1 <- renderPrint({
+  a <- theme1()[, input$variable1]
+  b <- a[!is.na(a),]
+  start <- head(b, n = 100)
+  lapply(start, FUN=mean, na.rm = TRUE)
+  })
+verbatimTextOutput("console1")
+```
+
+#### Milieu
+```{r}
+output$console2 <- renderPrint({
+  a <- theme1()[, input$variable1]
+  b <- a[!is.na(a),]
+  middle <- b[(nrow(b)/2) : (nrow(b)/2 + 100),]
+  lapply(middle, FUN=mean, na.rm = TRUE)
+})
+verbatimTextOutput("console2")
+```
+
+#### Fin
+```{r}
+output$console3 <- renderPrint({
+  a <- theme1()[, input$variable1]
+  b <- a[!is.na(a),]
+  end <- tail(b, n = 100)
+  lapply(end, FUN=mean, na.rm = TRUE)
+  })
+verbatimTextOutput("console3")
+```
+
+### Unit Root test KPSS
+#### Avant differenciation
+```{r}
+output$console13 <- renderPrint({
+  v <- theme1()[, input$variable1]
+  v %>% ur.kpss() %>% summary()
+  })
+verbatimTextOutput("console13")
+```
+
+#### Apres differenciation
+```{r}
+output$console14 <- renderPrint({
+  v <- theme1()[, input$variable1]
+  differenced <- v %>% diff() %>% ur.kpss() %>% summary()
+  differenced
+    })
+verbatimTextOutput("console14")
+```
+#### Time serie differenciee (stationnaire)
+```{r}
+output$plotly1 <- renderPlotly({
+    dat <- theme1()[,input$variable1]
+    d <- diff(dat)
+    ts_ggplot(d)
+})
+plotlyOutput("plotly1")
+```
+
+### Variances
+
+#### Globale
+```{r}
+theme_1 <- reactive({ get(input$theme1) })
+theme_var_1 <- reactive({ get(input$theme1)[,input$variable1] })
+
+output$console5 <- renderPrint({
+  a <- theme1()[, input$variable1]
+  b <- a[!is.na(a),]
+  lapply(b, FUN=mean, na.rm = TRUE)
+  })
+verbatimTextOutput("console5")
+```
+
+#### Debut
+```{r}
+output$console6 <- renderPrint({
+  a <- theme1()[, input$variable1]
+  b <- a[!is.na(a),]
+  start <- head(b, n = 100)
+  lapply(start, FUN=mean, na.rm = TRUE)
+  })
+verbatimTextOutput("console6")
+```
+
+#### Milieu
+```{r}
+output$console7 <- renderPrint({
+  a <- theme1()[, input$variable1]
+  b <- a[!is.na(a),]
+  middle <- b[(nrow(b)/2) : (nrow(b)/2 + 100),]
+  lapply(middle, FUN=mean, na.rm = TRUE)
+})
+verbatimTextOutput("console7")
+```
+
+#### Fin
+```{r}
+output$console8 <- renderPrint({
+  a <- theme1()[, input$variable1]
+  b <- a[!is.na(a),]
+  end <- tail(b, n = 100)
+  lapply(end, FUN=mean, na.rm = TRUE)
+  })
+verbatimTextOutput("console8")
+```
+
+### Test de saisonnalité 
+```{r eval = FALSE}
+variable <- sante[, "LSATISFY"]
+variable %>% log() %>% nsdiffs()
+variable %>% log() %>% diff(lag=12) %>% ndiffs()
+```
+
+```{r}
+theme_1 <- reactive({ get(input$theme1) })
+theme_var_1 <- reactive({ get(input$theme1)[,input$variable1] })
+
+output$console12 <- renderPrint({
+  ndiffs(tabac[, "SMOKE100"])
+  })
+verbatimTextOutput("console12")
+```
+### Stabilisation variance (log) 
+
+```{r}
+output$plotly2 <- renderPlotly({
+  
+  if (input$variable1 == "SMOKE100") {
+    dat <- apply.quarterly(tabac$SMOKE100, FUN=mean)
+    d <- diff(dat)
+    ts_ggplot(d)
+  } else {
+    
+  }
+  
+})
+
+plotlyOutput("plotly2")
+```
+
+### Resultats des tests
+```{r}
+output$table <- renderTable ({
+  var <- c("MARITAL","X_CHLDCNT", "X_AGE_G", "SEX", "X_EDUCAG", "EMPLOY1", "X_INCOMG", "POORHLTH", "MENTHLTH", "QLMENTL2", "QLSTRES2", "ADDEPEV2", "EMTSUPRT", "LSATISFY")
+  ndiffs <- c(1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1)
+  p_value <- c(0.0269, 0.0011, 0.0167, 0.0372, 0.001, 0.0535, 0.0557, 0.0137, 0.0837, 0.0313, 0.0274, 0.0638, 0.0524, 0.2277)
+  saisonnalite <- c(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+  
+  df <- data.frame(var, ndiffs, p_value, saisonnalite)
+}, digits = 4)
+tableOutput("table")
+```
+
+
+### Lag plot
+```{r}
+output$plotly3 <- renderPlotly({
+  dat <- theme1()[,input$variable1]
+  d <- diff(dat)
+  # gglagplot(d) 
+})
+plotlyOutput("plotly3")
+```
+
+### Autocorrelation
+```{r}
+  d <- diff(apply.quarterly(education$EMPLOY1, FUN=mean), diff=2)
+  ggAcf(d)
+```
+
+### Comparaison des tendances entre 2 series
+
+```{r}
+output$plot3 <- renderPlot({
+
+  ma1 <- ma(diff(apply.monthly(theme_var_1(), FUN=mean)), 5)
+  ma2 <- ma(apply.monthly(theme_var_2(), FUN=mean), 5)
+
+  autoplot(cbind(ma1, ma2))
+})
+
+plotOutput("plot3")
+```
+
+
 
 Row {data-height=400}
 -------------------------------------
+
 
 ### Series trimestrielles par theme
 
@@ -362,194 +570,8 @@ output$plot2 <- renderPlot({
 plotOutput("plot2")
 ```  
     
-Row {.tabset}
--------------------------------------
 
-### Moyennes
-
-#### Globale
-```{r}
-theme_1 <- reactive({ get(input$theme1) })
-theme_var_1 <- reactive({ get(input$theme1)[,input$variable1] })
-
-output$console4 <- renderPrint({
-  a <- theme1()[, input$variable1]
-  b <- a[!is.na(a),]
-  lapply(b, FUN=mean, na.rm = TRUE)
-  })
-verbatimTextOutput("console4")
-```
-
-#### Debut
-```{r}
-output$console1 <- renderPrint({
-  a <- theme1()[, input$variable1]
-  b <- a[!is.na(a),]
-  start <- head(b, n = 100)
-  lapply(start, FUN=mean, na.rm = TRUE)
-  })
-verbatimTextOutput("console1")
-```
-
-#### Milieu
-```{r}
-output$console2 <- renderPrint({
-  a <- theme1()[, input$variable1]
-  b <- a[!is.na(a),]
-  middle <- b[(nrow(b)/2) : (nrow(b)/2 + 100),]
-  lapply(middle, FUN=mean, na.rm = TRUE)
-})
-verbatimTextOutput("console2")
-```
-
-#### Fin
-```{r}
-output$console3 <- renderPrint({
-  a <- theme1()[, input$variable1]
-  b <- a[!is.na(a),]
-  end <- tail(b, n = 100)
-  lapply(end, FUN=mean, na.rm = TRUE)
-  })
-verbatimTextOutput("console3")
-```
-
-### Test diff : Unit Root tests
-```{r}
-tabac$SMOKE100 %>% ur.kpss() %>% summary()
-tabac$SMOKE100 %>% diff() %>% ur.kpss() %>% summary()
-
-```
-
-### Stabilisation moyenne (diff) 
-#### Ordre de differenciation
-```{r}
-theme_1 <- reactive({ get(input$theme1) })
-theme_var_1 <- reactive({ get(input$theme1)[,input$variable1] })
-
-output$console12 <- renderPrint({
-  ndiffs(tabac[, "SMOKE100"])
-  })
-verbatimTextOutput("consol12")
-```
-
-```{r}
-output$plotly1 <- renderPlotly({
-  
-  if (input$variable1 == "SMOKE100") {
-    dat <- apply.quarterly(tabac[,input$variable1], FUN=mean)
-    d <- diff(dat)
-    ts_ggplot(d)
-  } else {
-    
-  }
-})
-
-plotlyOutput("plotly1")
-```
-
-### Variances
-
-#### Globale
-```{r}
-theme_1 <- reactive({ get(input$theme1) })
-theme_var_1 <- reactive({ get(input$theme1)[,input$variable1] })
-
-output$console5 <- renderPrint({
-  a <- theme1()[, input$variable1]
-  b <- a[!is.na(a),]
-  lapply(b, FUN=mean, na.rm = TRUE)
-  })
-verbatimTextOutput("console5")
-```
-
-#### Debut
-```{r}
-output$console6 <- renderPrint({
-  a <- theme1()[, input$variable1]
-  b <- a[!is.na(a),]
-  start <- head(b, n = 100)
-  lapply(start, FUN=mean, na.rm = TRUE)
-  })
-verbatimTextOutput("console6")
-```
-
-#### Milieu
-```{r}
-output$console7 <- renderPrint({
-  a <- theme1()[, input$variable1]
-  b <- a[!is.na(a),]
-  middle <- b[(nrow(b)/2) : (nrow(b)/2 + 100),]
-  lapply(middle, FUN=mean, na.rm = TRUE)
-})
-verbatimTextOutput("console7")
-```
-
-#### Fin
-```{r}
-output$console8 <- renderPrint({
-  a <- theme1()[, input$variable1]
-  b <- a[!is.na(a),]
-  end <- tail(b, n = 100)
-  lapply(end, FUN=mean, na.rm = TRUE)
-  })
-verbatimTextOutput("console8")
-```
-
-### Test 
-```{r eval = FALSE}
-tabac[, "SMOKE100"] %>% log() %>% nsdiffs()
-#> [1] 1
-tabac[, "SMOKE100"] %>% log() %>% diff(lag=12) %>% ndiffs()
-#> [1] 1
-```
-
-### Stabilisation variance (log) 
-
-```{r}
-output$plotly2 <- renderPlotly({
-  
-  if (input$variable1 == "SMOKE100") {
-    dat <- apply.quarterly(tabac$SMOKE100, FUN=mean)
-    d <- diff(dat)
-    ts_ggplot(d)
-  } else {
-    
-  }
-  
-})
-
-plotlyOutput("plotly2")
-```
-
-### Lag plot
-```{r}
-  d <- diff(apply.quarterly(education$EMPLOY1, FUN=mean))
-  gglagplot(d) 
-```
-
-### Autocorrelation
-```{r}
-  d <- diff(apply.quarterly(education$EMPLOY1, FUN=mean), diff=2)
-  ggAcf(d)
-```
-
-### Comparaison des tendances entre 2 series
-
-```{r}
-output$plot3 <- renderPlot({
-
-  ma1 <- ma(diff(apply.monthly(theme_var_1(), FUN=mean)), 5)
-  ma2 <- ma(apply.monthly(theme_var_2(), FUN=mean), 5)
-
-  autoplot(cbind(ma1, ma2))
-})
-
-plotOutput("plot3")
-```
-
-
-
-Regression dynamique {data-orientation=rows}
+Modèle de régression dynamique {data-orientation=rows}
 =====================================  
 
 ### fewwfe

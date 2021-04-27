@@ -44,7 +44,7 @@ save.image('/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData')
 
 ```{r}
     brfss <- data_1985_2019_cleaned_no_factors %>%
-      select(-c(X, SEX, X_STATE, IYEAR))
+      select(-c(X, X_STATE, IYEAR))
     brfss_m <- brfss  %>%
       group_by(IDATE) %>% 
       summarise_all(mean, na.rm = TRUE)
