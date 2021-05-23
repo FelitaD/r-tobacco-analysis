@@ -1,0 +1,80 @@
+---
+title: "Tabagisme"
+subtitle: "Analyse multivariee"
+author: "Meyssa Beddar & Félita Donor"
+output: 
+  ioslides_presentation : 
+    theme: flatly
+    fig_height: 4
+    fig_width: 6
+    toc_depth: TRUE
+    smaller: TRUE
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = FALSE, 
+  message = FALSE, 
+  warning = FALSE
+)
+library(correlationfunnel)
+library(tidyquant)
+library(plotly)
+library(tidyverse)
+library(shiny)
+library(tidyverse)
+library(scales)
+library(reshape2)
+library(ggplot2)
+library(xts)
+library(zoo)
+library(tsbox)
+library(forecast)
+library(ggplot2)
+library(psych)
+library(fpp2)
+library(rsconnect)
+```
+
+```{r}
+load("/Users/lmp/CNAM/Stats/Mini-memoire/data/all_data.RData")
+```
+
+
+# Problématique : Y a-t-il  une relation de causalité entre  tabagisme et santé mentale?
+
+Considération des facteurs socio-démographiques, prix et santé mentale
+
+# 1. Description des Donnees 
+
+## Datasets
+
+```{r}
+inputPanel(
+  shiny::selectInput("dataset", label = NULL, 
+                     choices = c("tax_burden", "brfss"),
+                     selected = "brfss")
+)
+```
+
+```{r}
+data <- reactive({ get(input$dataset) })
+
+output$text <- renderPrint ({
+  print("Dimensions: ")
+  dim(data())
+})
+
+textOutput("text")
+```
+
+```{r}
+data <- reactive({ get(input$dataset) })
+
+output$table <- renderTable ({
+  head(data(), 5)
+})
+
+tableOutput("table")
+```

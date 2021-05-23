@@ -1,0 +1,212 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(scales)
+library(reshape2)
+library(ggplot2)
+library(xts)
+library(zoo)
+library(tsbox)
+```
+
+```{r}
+  data_1985_2019 <- read.csv("~/CNAM/Stats/Mini-memoire/data/data_1985_2019_cleaned.csv")
+  data <- data_1985_2019
+```
+
+## EDA
+
+#### Choix des variables
+```{r}
+    PMS <- data %>%
+      select(IDATE, IYEAR,  SMOKE100 , POORHLTH, MENTHLTH)
+    PMS <- drop_na(PMS) # on veut qu'un individu ait repondu a toutes les questions
+```
+
+#### Aggregation par date 
+
+```{r}
+    PMS_mean <- PMS  %>%
+                    filter(IYEAR != 2020) %>%
+                    group_by(IDATE) %>% 
+                    summarise(POORHLTH = mean(POORHLTH),
+                            MENTHLTH = mean(MENTHLTH),
+                            SMOKE100 = mean(SMOKE100),
+                            DATE = first(IDATE))
+```
+
+#### Creation de times series type xts
+
+- Visualisation des donnees originales
+```{r}
+  PMS_date <- as.Date(PMS_mean$DATE, format = "%Y-%m-%d")
+  PMS_cols <- select(PMS_mean, SMOKE100, POORHLTH, MENTHLTH)
+  PMS_xts <- xts(PMS_cols, order.by=PMS_date)
+  plot(PMS_xts)
+```
+
+- Remplacement des donnees de 2010 par interpolation lineaire
+
+```{r}
+original_df <-PMS_mean[!startsWith(PMS_mean$IDATE,"2010"),]
+times.init <- as.Date(original_df$DATE, format = "%Y-%m-%d")
+new_df <-xts(original_df[,2:4],times.init)
+
+PMS_xts_interpol <- na.approx(new_df, xout=seq(min(times.init), max(times.init), "day"))
+ts.plot(PMS_xts_interpol)
+
+PMS_ts_interpol <- ts_ts(PMS_xts_interpol)
+ts_ggplot(PMS_xts_interpol, title="Evolution de la santé mentale des répondants", subtitle="Fumeurs et non fumeurs") +
+  theme_tsbox() +
+  scale_color_tsbox() # ts_ggplot marche aussi avec xts
+```
+
+> Tendance : en augmentation
+> Seasonality : peut-etre
+
+
+## Visualisation multivariee
+
+### Correlation
+
+- POORHLTH, MENTHLTH : Nombre de jours
+- SMOKE100 : 0 1
+
+#### Caracteristiques
+
+```{r}
+# Generate means from eu_percentreturns
+colMeans(PMS_ts_interpol)
+
+# Use apply to calculate sample variance from eu_percentreturns
+apply(PMS_ts_interpol, MARGIN = 2, FUN = var)
+
+# Use apply to calculate standard deviation from eu_percentreturns
+apply(PMS_ts_interpol, MARGIN = 2, FUN = sd)
+
+# Display a histogram of percent returns for each index
+par(mfrow = c(2,2))
+apply(PMS_ts_interpol, MARGIN = 2, FUN = hist, main = "Tabagisme et sante mentale", xlab = "")
+
+# Display normal quantile plots of percent returns for each index
+par(mfrow = c(2,2))
+apply(PMS_ts_interpol, MARGIN = 2, FUN = qqnorm, main = "")
+qqline(PMS_ts_interpol)
+```
+
+#### Relations bivariees
+
+```{r}
+poorhlth <- PMS_ts_interpol[,1]
+menthlth <- PMS_ts_interpol[,2]
+smoke100 <- PMS_ts_interpol[,3]
+```
+
+- log returns : quand time trend commune
+
+```{r}
+# Make a scatterplot of DAX and FTSE
+plot(smoke100, menthlth)
+
+# Make a scatterplot matrix of eu_stocks
+pairs(PMS_ts_interpol)
+
+# Convert eu_stocks to log returns
+logreturns <- diff(log(PMS_ts_interpol))
+
+# Plot logreturns
+plot(PMS_ts_interpol)
+
+# Make a scatterplot matrix of logreturns
+pairs(PMS_ts_interpol)
+```
+#### Covariance et correlation
+
+- covariance positive montre association
+  - depend de l'echelle
+- correlations est une version standardisee de la covariance
+  - ne depend pas de l'echelle
+- log returns (si variable petite)
+  - valeur tres petite mais correlation tres forte
+
+
+```{r}
+# Use cov() with DAX_logreturns and FTSE_logreturns
+cov(poorhlth, menthlth)
+
+# Use cov() with logreturns
+cov(PMS_ts_interpol)
+
+# Use cor() with DAX_logreturns and FTSE_logreturns
+cor(poorhlth, menthlth)
+cov(poorhlth, menthlth) / (sd(poorhlth) * sd (menthlth))
+
+# Use cor() with logreturns
+cor(PMS_ts_interpol)
+```
+
+#### Autocorrelation estimates at lags
+
+Etudie comment time series etst reliee a son passee
+Celles avec une forte autocorrelation sont predictibles
+
+- Lag 1 : 1 jour d'ecart
+- Lag 2 : 2 jours d'ecart
+
+ACF autocorrelation function is the autocorrelation function of the time lag
+plot de l'acf est skewed a droit car chaque lag est correle avec ses lags recents
+
+```{r}
+acf(smoke100, lag.max = 2, plot = FALSE)
+acf(poorhlth, lag.max = 2, plot = FALSE)
+acf(menthlth, lag.max = 2, plot = FALSE)
+acf(PMS_ts_interpol, lag.max = 2, plot = FALSE)
+
+acf(smoke100)
+acf(poorhlth)
+acf(menthlth)
+acf(PMS_ts_interpol)
+```
+each ACF figure includes a pair of blue, horizontal, dashed lines representing lag-wise 95% confidence intervals centered at zero. These are used for determining the statistical significance of an individual autocorrelation estimate at a given lag versus a null value of zero, i.e., no autocorrelation at 
+
+```{r}
+# Donnees aggregees par jour
+autoplot(tabac[, "SMOKE100"]) + xlab("Annee") + ylab("Pourcentage ayant repondu 'oui'") +
+  ggtitle("Avez-vous fume plus de 100 cigarettes dans votre vie ?")
+# Donnees aggregees par mois et trimestre
+smoke100_month <- apply.monthly(tabac[, "SMOKE100"],FUN=mean)
+smoke100_quarter <- apply.quarterly(tabac,FUN=mean)
+
+trend = ma(smoke100_month, order = 4, centre = T)
+plot(as.ts(smoke100_month))
+lines(trend)
+plot(as.ts(trend))
+
+head(ma(smoke100_month, 5), n=10)
+tail(ma(smoke100_month, 5), n=10)
+ma5 <- ma(smoke100_month, 50)
+length(ma5)
+ma5[5:15]
+ma5[370:385]
+plot(ma5)
+
+plot(as.ts(timeserie_beer))
+lines(trend_beer)
+
+autoplot(smoke100_month) + xlab("Annee") + ylab("Pourcentage ayant repondu 'oui'") +
+  ggtitle("Avez-vous fume plus de 100 cigarettes dans votre vie ?")
+
+autoplot(ts(smoke100_quarter), series="SMOKE100") +
+  autolayer(ma(smoke100_quarter, 4), series="5-MA") +
+  xlab("Temps") + ylab("Taux de reponse 'Oui' ") +
+  ggtitle("Avez-vous fume plus de 100 cigarettes dans votre vie ?")
+
+frequency(smoke100_month)
+which.max(smoke100_quarter)
+```

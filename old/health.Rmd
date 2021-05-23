@@ -1,0 +1,68 @@
+---
+title: "Health and Tobacco"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+
+load("brfss2013.RData")
+```
+
+# bphigh4: Ever Told Blood Pressure High
+# bpmeds: Currently Taking Blood Pressure Medication
+# _rfhype5: High Blood Pressure Calculated Variable
+
+```{r}
+hypertension <- subset(brfss2013, select=c("bphigh4", "bpmeds", "X_rfhype5"))
+```
+
+# cvdinfr4: Ever Diagnosed With Heart Attack
+# cvdcrhd4: Ever Diagnosed With Angina Or Coronary Heart Disease
+# cvdstrk3: Ever Diagnosed With A Stroke
+# asthma3: Ever Told Had Asthma
+# asthnow: Still Have Asthma
+# _ltasth1: Lifetime Asthma Calculated Variable
+# _casthm1: Current Asthma Calculated Variable
+# _asthms1: Computed Asthma Status
+# chcocncr: (Ever Told) You Had Any Other Types Of Cancer?
+# chccopd1: (Ever Told) You Have (Copd) Chronic Obstructive Pulmonary Disease, Emphysema Or
+# havarth3: Told Have Arthritis
+# addepev2: Ever Told You Had A Depressive Disorder
+
+```{r}
+chronic_health_disorder <- subset(brfss2013, select=c("cvdinfr4", "cvdcrhd4", "cvdstrk3", 
+                                                      "asthma3", "asthnow", "chcocncr", 
+                                                      "chccopd1", "havarth3", "addepev2",
+                                                      "X_ltasth1", "X_casthm1", "X_asthms1"))
+```
+
+# physhlth: Number Of Days Physical Health Not Good
+
+```{r}
+physical_healthy_days <- subset(brfss2013, select=c("physhlth"))
+
+```
+
+# genhlth: General Health
+
+```{r}
+general_health <- subset(brfss2013, select=c("genhlth"))
+```
+
+# harehab1: Outpatient Rehab After Heart Attack Hosp Stay
+# strehab1: Outpatient Rehab After Hosp Stay For Stroke
+# cvdasprn: Take Aspirin Daily Or Every Other Day
+# aspunsaf: Health Makes Taking Aspirin Unsafe
+# rlivpain: Take Aspirin To Relieve Pain
+# rduchart: Take Aspirin To Reduce Chance Of Heart Attack
+# rducstrk: Take Aspirin To Reduce Chance Of Stroke
+
+```{r}
+cardiovascular <- subset(brfss2013, select=c("harehab1", "strehab1", "cvdasprn", 
+                                             "aspunsaf", "rlivpain", "rduchart", 
+                                             "rducstrk"))
+```
+
+
