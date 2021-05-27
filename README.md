@@ -11,3 +11,5 @@ L'ordre d'execution est le suivant :
 - Final_description_donnees (slides pour la presentation)
 - Final_time_series (shiny app)
 
+- script_tabac_depression est indépendant
+

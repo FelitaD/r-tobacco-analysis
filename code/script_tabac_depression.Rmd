@@ -1,0 +1,1984 @@
+---
+title: "Dépression et tabagisme"
+author: "Meyssa BEDDAR, Félita DONOR "
+output:
+  prettydoc::html_pretty:
+    theme: hpstr
+    highlight: github
+---
+
+L'objectif de la présente étude est d'étudier la relation causale entre tabagisme et santé mentale. 
+
+Plus précisément, nous souhaiterions déterminer :
+- Si le tabagisme a un effet négatif sur la dépression,
+- Si la dépression a un effet négatif sur le tabagisme.
+
+Pour cela, nous nous appuierons sur les données du BRFSS des années 2013 à 2019, notamment celles relatives à la santé mentale ainsi qu'au tabagisme.
+
+Dans un premier temps, après avoir réalisé les importations et nettoyages nécessaires à l'analyse, nous effectuerons une exploration des données à l'aide de statistiques descriptives.
+Dans un second temps, nous évaluerons le lien causal entre tabagisme et dépression à l'aide de régression logistique après avoir effectué un appariement  sur l'échantillon.
+
+
+# Importations et nettoyage des données
+
+## Importations
+
+#### Importation des packages 
+
+```{r setup, warning=FALSE, message=FALSE}
+#Importation des packages nécessaires au traitement
+
+library(lmtest)
+library(sandwich)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+library(scales)
+library(prettyR)
+library(binom)
+library(Epi)
+library(foreign)
+library(naniar)
+library(corrplot)
+library(RColorBrewer)
+library(Hmisc)
+library(xtable)
+library(psy)
+library(tidyr)
+library(questionr)
+library(stargazer)
+library(gplots)
+library(vcd)
+library(FactoMineR)
+library(factoextra)
+library(MatchIt)
+library(optmatch)
+library(RItools)
+library(epiR)
+library(tableone)
+library(cobalt)
+library(effects)
+library(ggeffects)
+library(WeightIt)
+library(survey)
+library(GGally)
+```
+
+#### Définition et source de fonctions
+ 
+```{r message=FALSE}
+# Source et définition de la fonction corstars permettant la matrice de corrélation
+
+source("http://www.sthda.com/upload/rquery_cormat.r")
+
+corstars <-function(x, method=c("pearson", "spearman"), removeTriangle=c("upper", "lower"),
+                    result=c("none", "html", "latex")){
+  #Compute correlation matrix
+  require(Hmisc)
+  x <- as.matrix(x)
+  correlation_matrix<-rcorr(x, type=method[1])
+  R <- correlation_matrix$r # Matrix of correlation coeficients
+  p <- correlation_matrix$P # Matrix of p-value 
+  
+  ## Define notions for significance levels; spacing is important.
+  mystars <- ifelse(p < .0001, "****", ifelse(p < .001, "*** ", ifelse(p < .01, "**  ", ifelse(p < .05, "*   ", "    "))))
+  
+  ## trunctuate the correlation matrix to two decimal
+  R <- format(round(cbind(rep(-1.11, ncol(x)), R), 2))[,-1]
+  
+  ## build a new matrix that includes the correlations with their apropriate stars
+  Rnew <- matrix(paste(R, mystars, sep=""), ncol=ncol(x))
+  diag(Rnew) <- paste(diag(R), " ", sep="")
+  rownames(Rnew) <- colnames(x)
+  colnames(Rnew) <- paste(colnames(x), "", sep="")
+  
+  ## remove upper triangle of correlation matrix
+  if(removeTriangle[1]=="upper"){
+    Rnew <- as.matrix(Rnew)
+    Rnew[upper.tri(Rnew, diag = TRUE)] <- ""
+    Rnew <- as.data.frame(Rnew)
+  }
+  
+  ## remove lower triangle of correlation matrix
+  else if(removeTriangle[1]=="lower"){
+    Rnew <- as.matrix(Rnew)
+    Rnew[lower.tri(Rnew, diag = TRUE)] <- ""
+    Rnew <- as.data.frame(Rnew)
+  }
+  
+  ## remove last column and return the correlation matrix
+  Rnew <- cbind(Rnew[1:length(Rnew)-1])
+  if (result[1]=="none") return(Rnew)
+  else{
+    if(result[1]=="html") print(xtable(Rnew), type="html")
+    else print(xtable(Rnew), type="latex") 
+  }
+} 
+
+```
+
+#### Importation du jeu de données BRFSS contenant les informations importantes des années 2013 à 2019
+
+
+```{r message=FALSE}
+brfss <- read.csv("C:/Users/meyss/Documents/Meyssa/meyssa/Cours MEDAS/Statistiques/projet tabac/data_2013_2019.csv")
+
+```
+
+## Nettoyage de données 
+
+#### Renommage de modalités : 
+
+```{r message=FALSE}
+## Remplacement de certaines valeurs par des valeurs ou NA que nous avons jugées plus adéquates selon le contexte
+
+# pour la variable MENTHLTH
+brfss$MENTHLTH[brfss$MENTHLTH == 88] <- 0
+brfss <- brfss %>% replace_with_na(replace = list(MENTHLTH = c(77,99)))
+
+# pour la variable POORHLTH
+brfss$POORHLTH[brfss$POORHLTH  == 88] <- 0
+brfss <- brfss %>% replace_with_na(replace = list(POORHLTH  = c(77,99)))
+
+# pour la variable QLMENTL2
+brfss$QLMENTL2[brfss$QLMENTL2  == 88] <- 0
+brfss <- brfss %>% replace_with_na(replace = list(QLMENTL2  = c(77,99)))
+
+# pour la variable QLSTRES2
+brfss$QLSTRES2[brfss$QLSTRES2  == 88] <- 0
+brfss <- brfss %>% replace_with_na(replace = list(QLSTRES2  = c(77,99)))
+
+# pour la variable EMTSUPRT
+brfss <- brfss %>% replace_with_na(replace = list(EMTSUPRT  = c(7,9)))
+
+# pour la variable LSATISFY
+brfss <- brfss %>% replace_with_na(replace = list(LSATISFY  = c(7,9)))
+
+# pour la variable ADDEPEV2
+brfss <- brfss %>% replace_with_na(replace = list(ADDEPEV2  = c(7,9)))
+brfss$ADDEPEV2[brfss$ADDEPEV2  == 2] <- 0
+
+# pour la variable X_RFSMOK3
+brfss <- brfss %>% replace_with_na(replace = list(X_RFSMOK3  = c(9)))
+brfss$X_RFSMOK3 <- brfss$X_RFSMOK3 - 1
+
+# pour la variable X_SMOKER3
+brfss <- brfss %>% replace_with_na(replace = list(X_SMOKER3  = c(9)))
+
+# pour la variable USENOW3
+brfss <- brfss %>% replace_with_na(replace = list(USENOW3  = c(7,9)))
+
+# pour la variable LASTSMK2
+brfss <- brfss %>% replace_with_na(replace = list(LASTSMK2  = c(77,99)))
+
+# pour la variable STOPSMK2
+brfss <- brfss %>% replace_with_na(replace = list(STOPSMK2  = c(7,9)))
+
+# pour la variable SMOKDAY2
+brfss <- brfss %>% replace_with_na(replace = list(SMOKDAY2  = c(7,9)))
+
+# pour la variable SMOKE100
+brfss <- brfss %>% replace_with_na(replace = list(SMOKE100  = c(7,9)))
+brfss$SMOKE100[brfss$SMOKE100 == 2] <- 0
+
+# pour la variable SEX
+brfss <- brfss %>% replace_with_na(replace = list(SEX = c(7, 9)))
+brfss$SEX = cut(brfss$SEX, 2, labels=c("Homme", 'Femme'))
+
+# pour la variable PREGNANT
+brfss <- brfss %>% replace_with_na(replace = list(PREGNANT = c(7, 9)))
+
+# pour la variable MARITAL
+brfss <- brfss %>% replace_with_na(replace = list(MARITAL = c(9)))
+brfss$MARITAL = cut(brfss$MARITAL, 6, labels=c("Marié", 'Divorcé',"Veuf","Séparé","Jamais marié","Membre d'un couple non marié"))
+
+# pour la variable CHILDREN
+brfss <- brfss %>% replace_with_na(replace = list(CHILDREN = c(99)))
+brfss$CHILDREN[brfss$CHILDREN == 88] <- 0
+
+# pour la variable X_CHLDCNT
+brfss$X_CHLDCNT[brfss$X_CHLDCNT  == 1] <- 0
+brfss$X_CHLDCNT[brfss$X_CHLDCNT  == 2] <- 1
+brfss$X_CHLDCNT[brfss$X_CHLDCNT  == 3] <- 2
+brfss$X_CHLDCNT[brfss$X_CHLDCNT  == 4] <- 3
+brfss$X_CHLDCNT[brfss$X_CHLDCNT  == 5] <- 4
+brfss$X_CHLDCNT[brfss$X_CHLDCNT  == 6] <- 5
+brfss <- brfss %>% replace_with_na(replace = list(X_CHLDCNT = c(9)))
+
+# pour la variable X_AGE65YR
+brfss <- brfss %>% replace_with_na(replace = list(X_AGE65YR = c(3)))
+
+# pour la variable EDUCA
+brfss <- brfss %>% replace_with_na(replace = list(EDUCA = c(9)))
+
+# pour la variable X_EDUCAG
+brfss <- brfss %>% replace_with_na(replace = list(X_EDUCAG = c(9)))
+
+# pour la variable EMPLOY1
+brfss <- brfss %>% replace_with_na(replace = list(EMPLOY1 = c(9)))
+
+# pour la variable X_INCOMG
+brfss <- brfss %>% replace_with_na(replace = list(X_INCOMG = c(9)))
+
+
+# pour la variable RENTHOM1
+brfss <- brfss %>% replace_with_na(replace = list(RENTHOM1 = c(7, 9)))
+
+```
+
+#### Création de nouvelles colonnes en tant que facteurs
+
+```{r message=FALSE}
+## Créaation de variables catérogielles à partir de variables ordinales
+
+#Création de la colonne "X_AGE_G_FACTOR" basée sur la colonne "X_AGE_G"
+brfss$X_AGE_G_FACTOR = cut(brfss$X_AGE_G, 6, labels=c("18-24 ans", '25-34 ans','35-44 ans',"45-54 ans","55-64 ans","65ans et plus"))
+
+
+#Création de la colonne "X_EDUCAG_FACTOR" basée sur la colonne "X_EDUCAG"
+brfss$X_EDUCAG_FACTOR = cut(brfss$X_EDUCAG, 4, labels=c("Sans diplôme", 'Diplôme du lycée',"A étudié à l'univ.","Diplôme de l'université"))
+
+#Création de la colonne "X_INCOMG_FACTOR" basée sur la colonne "X_INCOMG"
+brfss$X_INCOMG_FACTOR = cut(brfss$X_INCOMG, 5, labels=c("< 15 000", '15 - 25 000',"25 - 35 000","35 - 50 000","< 50 000"))
+
+#Création de la colonne "SMOKE100_FACTOR" basée sur la colonne "SMOKE100"
+brfss$SMOKE100_FACTOR = cut(brfss$SMOKE100, 2, labels=c('Moins de 100 cigarettes', '100 cigarettes et plus'))
+
+#Création de la colonne "SMOKDAY2_FACTOR" basée sur la colonne "SMOKDAY2"
+brfss$SMOKDAY2_FACTOR = cut(brfss$SMOKDAY2, 3, labels=c('Tous les jours', 'Quelques jours',"Jamais"))
+
+#Création de la colonne "STOPSMK2_FACTOR" basée sur la colonne "STOPSMK2"
+brfss$STOPSMK2_FACTOR = cut(brfss$SMOKE100, 2, labels=c("Non", 'Oui'))
+
+#Création de la colonne "LASTSMK2_FACTOR" basée sur la colonne "LASTSMK2"
+brfss$LASTSMK2_FACTOR = as.factor(brfss$LASTSMK2)
+
+levels(brfss$LASTSMK2_FACTOR)[levels(brfss$LASTSMK2_FACTOR)=="1"] <- "< 1 mois"
+levels(brfss$LASTSMK2_FACTOR)[levels(brfss$LASTSMK2_FACTOR)=="2"] <- "1-3 mois"
+levels(brfss$LASTSMK2_FACTOR)[levels(brfss$LASTSMK2_FACTOR)=="3"] <- "3-6 mois"
+levels(brfss$LASTSMK2_FACTOR)[levels(brfss$LASTSMK2_FACTOR)=="4"] <- "6-12 mois"
+levels(brfss$LASTSMK2_FACTOR)[levels(brfss$LASTSMK2_FACTOR)=="5"] <- "1-5 ans"
+levels(brfss$LASTSMK2_FACTOR)[levels(brfss$LASTSMK2_FACTOR)=="6"] <- "5-10 ans"
+levels(brfss$LASTSMK2_FACTOR)[levels(brfss$LASTSMK2_FACTOR)=="7"] <- "10 ans ou plus"
+levels(brfss$LASTSMK2_FACTOR)[levels(brfss$LASTSMK2_FACTOR)=="8"] <- "Jamais fumé régulièrement"
+
+#Création de la colonne "X_CHLDCNT_FACTOR" basée sur la colonne "X_CHLDCNT"
+brfss$X_CHLDCNT_FACTOR = as.factor(brfss$X_CHLDCNT)
+
+levels(brfss$X_CHLDCNT_FACTOR)[levels(brfss$X_CHLDCNT_FACTOR)=="0"] <- "0 enfant"
+levels(brfss$X_CHLDCNT_FACTOR)[levels(brfss$X_CHLDCNT_FACTOR)=="1"] <- "1 enfant"
+levels(brfss$X_CHLDCNT_FACTOR)[levels(brfss$X_CHLDCNT_FACTOR)=="2"] <- "2 enfants"
+levels(brfss$X_CHLDCNT_FACTOR)[levels(brfss$X_CHLDCNT_FACTOR)=="3"] <- "3 enfants"
+levels(brfss$X_CHLDCNT_FACTOR)[levels(brfss$X_CHLDCNT_FACTOR)=="4"] <- "4 enfants"
+levels(brfss$X_CHLDCNT_FACTOR)[levels(brfss$X_CHLDCNT_FACTOR)=="5"] <- "+4 enfants"
+
+
+#Création de la colonne "EMPLOY1_FACTOR" basée sur la colonne "EMPLOY1"
+brfss$EMPLOY1_FACTOR = as.factor(brfss$EMPLOY1)
+
+levels(brfss$EMPLOY1_FACTOR )[levels(brfss$EMPLOY1_FACTOR )=="1"] <- "Employed for wages"
+levels(brfss$EMPLOY1_FACTOR )[levels(brfss$EMPLOY1_FACTOR )=="2"] <- "Self-employed"
+levels(brfss$EMPLOY1_FACTOR )[levels(brfss$EMPLOY1_FACTOR )=="3"] <- "Unemployed > 1yr"
+levels(brfss$EMPLOY1_FACTOR )[levels(brfss$EMPLOY1_FACTOR )=="4"] <- "Unemployed < 1yr"
+levels(brfss$EMPLOY1_FACTOR )[levels(brfss$EMPLOY1_FACTOR )=="5"] <- "Homemaker"
+levels(brfss$EMPLOY1_FACTOR )[levels(brfss$EMPLOY1_FACTOR )=="6"] <- "Student"
+levels(brfss$EMPLOY1_FACTOR )[levels(brfss$EMPLOY1_FACTOR )=="7"] <- "Retired"
+levels(brfss$EMPLOY1_FACTOR )[levels(brfss$EMPLOY1_FACTOR )=="8"] <- "Unable to work"
+
+
+#Création de la colonne "RENTHOM1_FACTOR" basée sur la colonne "RENTHOM1"
+brfss$RENTHOM1_FACTOR = as.factor(brfss$RENTHOM1)
+
+levels(brfss$RENTHOM1_FACTOR)[levels(brfss$RENTHOM1_FACTOR)=="1"] <- "Propriétaire"
+levels(brfss$RENTHOM1_FACTOR)[levels(brfss$RENTHOM1_FACTOR)=="2"] <- "Locataire"
+levels(brfss$RENTHOM1_FACTOR)[levels(brfss$RENTHOM1_FACTOR)=="3"] <- "Autre arrangement"
+
+#Création de la colonne "VETERAN3_FACTOR" basée sur la colonne "VETERAN3"
+brfss$VETERAN3_FACTOR = as.factor(brfss$VETERAN3)
+
+levels(brfss$VETERAN3_FACTOR)[levels(brfss$VETERAN3_FACTOR)=="1"] <- "Vétéran"
+levels(brfss$VETERAN3_FACTOR)[levels(brfss$VETERAN3_FACTOR)=="2"] <- "Non vétéran"
+
+
+#Création de la colonne "X_SMOKER3_FACTOR" basée sur la colonne "X_SMOKER3"
+brfss$X_SMOKER3_FACTOR = as.factor(brfss$X_SMOKER3)
+
+levels(brfss$X_SMOKER3_FACTOR)[levels(brfss$X_SMOKER3_FACTOR)=="1"] <- "Fumeur journalier"
+levels(brfss$X_SMOKER3_FACTOR)[levels(brfss$X_SMOKER3_FACTOR)=="2"] <- "Fumeur quelques jours"
+levels(brfss$X_SMOKER3_FACTOR)[levels(brfss$X_SMOKER3_FACTOR)=="3"] <- "Ancien fumeur"
+levels(brfss$X_SMOKER3_FACTOR)[levels(brfss$X_SMOKER3_FACTOR)=="4"] <- "Non fumeur"
+
+#Création de la colonne "ADDEPEV2_FACTOR" basée sur la colonne "ADDEPEV2"
+brfss$ADDEPEV2_FACTOR = cut(brfss$ADDEPEV2, 2, labels=c("Pas de dépression.", 'Dépression'))
+
+#Création de la colonne "EMTSUPRT_FACTOR" basée sur la colonne "EMTSUPRT"
+brfss$EMTSUPRT_FACTOR = as.factor(brfss$EMTSUPRT)
+
+levels(brfss$EMTSUPRT_FACTOR)[levels(brfss$EMTSUPRT_FACTOR)=="1"] <- "Toujours"
+levels(brfss$EMTSUPRT_FACTOR)[levels(brfss$EMTSUPRT_FACTOR)=="2"] <- "Souvent"
+levels(brfss$EMTSUPRT_FACTOR)[levels(brfss$EMTSUPRT_FACTOR)=="3"] <- "Parfois"
+levels(brfss$EMTSUPRT_FACTOR)[levels(brfss$EMTSUPRT_FACTOR)=="4"] <- "Rarement"
+levels(brfss$EMTSUPRT_FACTOR)[levels(brfss$EMTSUPRT_FACTOR)=="5"] <- "Jamais"
+
+#Création de la colonne "LSATISFY_FACTOR" basée sur la colonne "LSATISFY"
+brfss$LSATISFY_FACTOR = as.factor(brfss$LSATISFY)
+
+levels(brfss$LSATISFY_FACTOR)[levels(brfss$LSATISFY_FACTOR)=="1"] <- "Très satisfait"
+levels(brfss$LSATISFY_FACTOR)[levels(brfss$LSATISFY_FACTOR)=="2"] <- "Satisfait"
+levels(brfss$LSATISFY_FACTOR)[levels(brfss$LSATISFY_FACTOR)=="3"] <- "Insatisfait"
+levels(brfss$LSATISFY_FACTOR)[levels(brfss$LSATISFY_FACTOR)=="4"] <- "Très insatisfait"
+
+
+#Création de la colonne "X_RFSMOK3_FACTOR" basée sur la colonne "X_RFSMOK3"
+brfss$X_RFSMOK3_FACTOR = cut(brfss$X_RFSMOK3, 2, labels=c("Non", 'Oui'))
+
+
+
+# Création de la colonne "POORHEALTH_FACTOR " basée sur la colonne "POORHLTH"
+brfss$POORHEALTH_FACTOR <- cut(brfss$POORHLTH, breaks = seq(0, 30, by = 10))
+
+levels(brfss$POORHEALTH_FACTOR)[levels(brfss$POORHEALTH_FACTOR)=="(0,10]"] <- "Santé ment/phy +"
+levels(brfss$POORHEALTH_FACTOR)[levels(brfss$POORHEALTH_FACTOR)=="(10,20]"] <- "Santé ment/phy +-"
+levels(brfss$POORHEALTH_FACTOR)[levels(brfss$POORHEALTH_FACTOR)=="(20,30]"] <- "Santé ment/phy -"
+
+
+# Création de la colonne "MENTHLTH_FACTOR " basée sur la colonne "MENTHLTH"
+brfss$MENTHLTH_FACTOR <- cut(brfss$MENTHLTH, breaks = seq(0, 30, by = 10))
+
+levels(brfss$MENTHLTH_FACTOR)[levels(brfss$MENTHLTH_FACTOR)=="(0,10]"] <- "Santé ment. +"
+levels(brfss$MENTHLTH_FACTOR)[levels(brfss$MENTHLTH_FACTOR)=="(10,20]"] <- "Santé ment. +-"
+levels(brfss$MENTHLTH_FACTOR)[levels(brfss$MENTHLTH_FACTOR)=="(20,30]"] <- "Santé ment. -"
+
+
+# Création de la colonne "QLMENTL2_FACTOR " basée sur la colonne "QLMENTL2"
+brfss$QLMENTL2_FACTOR <- cut(brfss$QLMENTL2, breaks = seq(0, 30, by = 10))
+
+levels(brfss$QLMENTL2_FACTOR)[levels(brfss$QLMENTL2_FACTOR)=="(0,10]"] <- "Ltl day dep"
+levels(brfss$QLMENTL2_FACTOR)[levels(brfss$QLMENTL2_FACTOR)=="(10,20]"] <- "Mdm day dep"
+levels(brfss$QLMENTL2_FACTOR)[levels(brfss$QLMENTL2_FACTOR)=="(20,30]"] <- "Many day dep"
+
+
+# Création de la colonne "QLSTRES2_FACTOR " basée sur la colonne "QLSTRES2"
+brfss$QLSTRES2_FACTOR <- cut(brfss$QLSTRES2, breaks = seq(0, 30, by = 10))
+
+levels(brfss$QLSTRES2_FACTOR)[levels(brfss$QLSTRES2_FACTOR)=="(0,10]"] <- "Ltl day anx"
+levels(brfss$QLSTRES2_FACTOR)[levels(brfss$QLSTRES2_FACTOR)=="(10,20]"] <- "Mdm day anx"
+levels(brfss$QLSTRES2_FACTOR)[levels(brfss$QLSTRES2_FACTOR)=="(20,30]"] <- "Many day anx"
+
+```
+
+
+# Exploration du  jeu de données BRFSS 
+
+## Informations globales du jeu de données 
+
+#### Affichage des premières lignes et des variables du jeu de données brfss
+
+1. Premières lignes
+```{r}
+head(brfss)
+```
+
+2. Noms des variables
+
+```{r message=FALSE}
+names(brfss)
+```
+
+#### Exploration des variables
+
+1. Informations élémentaires
+```{r message=FALSE}
+str(brfss)
+```
+
+2. Résumé des données 
+
+```{r message=FALSE}
+summary(brfss)
+```
+## Statistiques descriptives
+
+### Tabagisme
+
+1. Fréquence du tabagisme parmi les répondants 
+
+
+```{r message=FALSE}
+# Tableau des fréquences
+freq(brfss$SMOKDAY2_FACTOR)
+
+# Diagramme en barre
+ggplot(subset(brfss,!is.na(SMOKDAY2_FACTOR)), aes(x = as.factor(SMOKDAY2_FACTOR),fill=SMOKDAY2_FACTOR)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  geom_text(aes(y = ((..count..)/sum(..count..)), label = scales::percent((..count..)/sum(..count..))), stat = "count", vjust = -0.25) +
+  scale_y_continuous(labels = percent) + theme_economist()+ labs(title = "Fréquence du tabagisme chez les répondants", x = "Fréquence", y = "Proportion de répondants") + scale_fill_discrete(name="Fréquence") + scale_fill_brewer(palette = "RdBu") + theme(axis.text.x=element_text(size=10,vjust=.8, hjust=0.8),legend.position="none")
+```
+
+
+Parmi les personnes ayant répondu à cette question, on remarque que la majorité (66%) ne fume jamais, près d'un répondant sur 4 fume tous les jours, et 1 répondant sur 10 quelques jours. 
+Il y a donc davantage de personnes ne fumant pas que de personnes fumant.
+
+
+2. Moins ou plus de 100 cigarettes dans leur vie ?
+
+```{r}
+# Tableau des fréquences
+freq(brfss$SMOKE100_FACTOR)
+
+# Diagramme en barre
+ggplot(subset(brfss,!is.na(SMOKE100_FACTOR)), aes(x = as.factor(SMOKE100_FACTOR),fill=SMOKE100_FACTOR)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  geom_text(aes(y = ((..count..)/sum(..count..)), label = scales::percent((..count..)/sum(..count..))), stat = "count", vjust = -0.25) +
+  scale_y_continuous(labels = percent) + theme_economist()+ labs(title = "Répartition des répondants par rapport à leur consommation de tabac", x = "Nombre de cigarettes consommées dans leur vie", y = "Proportion de répondants") + scale_fill_discrete(name="Fréquence") + scale_fill_brewer(palette = "Reds") + theme(axis.text.x=element_text(size=10,vjust=.8, hjust=0.8),legend.position="none")
+```
+
+Concernant le nombre de cigarettes consommées dans leur vie, les différences s'amenuisent. Effectivement, 56% des répondants à cette question affirment avoir fumé moins de 100 cigarettes tandis que 44% indiquent en avoir consommé plus de 100.
+
+3. Arrêt du tabagisme dans les 12 derniers mois 
+
+```{r message=FALSE}
+
+# Tableau des fréquences
+freq(brfss$STOPSMK2_FACTOR)
+
+
+# Diagramme en barre
+ggplot(subset(brfss,!is.na(STOPSMK2_FACTOR)), aes(x = as.factor(STOPSMK2_FACTOR),fill=STOPSMK2_FACTOR)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  geom_text(aes(y = ((..count..)/sum(..count..)), label = scales::percent((..count..)/sum(..count..))), stat = "count", vjust = -0.25) +
+  scale_y_continuous(labels = percent) + theme_economist()+ labs(title = "Arrêt du tabagisme dans les douze derniers mois", x = "Arrêt du tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Fréquence") + scale_fill_brewer(palette = "Greens") + theme(axis.text.x=element_text(size=10,vjust=.8, hjust=0.8),legend.position="none")
+```
+
+Parmi les répondants fumeurs, 44% indiquent avoir tenté ou réussi à arrêter leur consommation durant les 12 derniers mois.
+On peut donc imaginer qu'une majorité pense à arrêter de fumer, étant donné cette proportion de répondants ayant tenté ou réussi l'abstinence.
+
+4. Intervalle depuis la dernière fumée
+
+```{r message=FALSE}
+# Tableau des fréquences
+freq(brfss$LASTSMK2_FACTOR)
+
+# Diagramme en barre
+ggplot(subset(brfss,!is.na(LASTSMK2_FACTOR)), aes(x = as.factor(LASTSMK2_FACTOR),fill=LASTSMK2_FACTOR)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  geom_text(aes(y = ((..count..)/sum(..count..)), label = scales::percent((..count..)/sum(..count..))), stat = "count", vjust = -0.25) +
+  scale_y_continuous(labels = percent) + theme_economist()+ labs(title = "Intervalle depuis la dernière fumée", x = "Intervalle", y = "Proportion de répondants") + scale_fill_discrete(name="Fréquence") + scale_fill_brewer(palette = "Pastel1") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8),legend.position="none")
+```
+
+Concernant les répondants ayant déjà fumé, on observe qu'une très grande majorité (67%) a arrêté sa consommation depuis au moins 10 ans. 
+
+5. Statut des répondants par rapport au tabagisme
+
+```{r message=FALSE}
+# Tableau des fréquences
+freq(brfss$X_SMOKER3_FACTOR)
+
+# Diagramme en barre
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR)), aes(x = as.factor(X_SMOKER3_FACTOR),fill=X_SMOKER3_FACTOR)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  geom_text(aes(y = ((..count..)/sum(..count..)), label = scales::percent((..count..)/sum(..count..))), stat = "count", vjust = -0.25) +
+  scale_y_continuous(labels = percent) + theme_economist()+ labs(title = "Statut des répondants par rapport au tabagisme", x = "Statut", y = "Proportion de répondants") + scale_fill_discrete(name="Fréquence") + scale_fill_brewer(palette = "RdBu") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8),legend.position="none")
+```
+
+Ici, on remarque que 56% des répondants n'ont jamais fumé, 27% sont d'anciens fumeurs et 15% fument toujours à l'heure actuelle. 
+
+6. Fumeurs actuels
+
+```{r message=FALSE}
+
+# Tableau des fréquences
+freq(brfss$X_RFSMOK3_FACTOR)
+
+# Diagramme en barre
+ggplot(subset(brfss,!is.na(X_RFSMOK3_FACTOR)), aes(x = as.factor(X_RFSMOK3_FACTOR),fill=X_RFSMOK3_FACTOR)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  geom_text(aes(y = ((..count..)/sum(..count..)), label = scales::percent((..count..)/sum(..count..))), stat = "count", vjust = -0.25) +
+  scale_y_continuous(labels = percent) + theme_economist()+ labs(title = "Répartition des fumeurs parmi les répondants", x = "Fumeur", y = "Proportion de répondants") + scale_fill_discrete(name="Fréquence") + scale_fill_brewer(palette = "Reds") + theme(axis.text.x=element_text(size=10,vjust=.8, hjust=0.8),legend.position="none")
+
+
+```
+
+Ces résultats coïncident avec ceux vus précédemment.
+
+### Santé mentale
+
+1. Tableau de données concernant la santé mentale
+```{r message=FALSE}
+
+brfss%>%
+  select(POORHLTH,MENTHLTH,QLMENTL2,QLSTRES2) %>%
+  stargazer()
+```
+
+
+
+2. Mauvaise santé physique/mentale
+
+```{r message=FALSE}
+
+ggplot(subset(brfss, !is.na(POORHLTH)), aes(x=POORHLTH,fill=POORHLTH)) + 
+  geom_boxplot(fill="plum2",notch=TRUE,outlier.colour="black", outlier.shape=8,
+               outlier.size=1) + theme_economist() +
+  ggtitle("Nombre de jours impactés par la santé mentale / physique") + labs(x = "Nombre de jours") + xlim(0,30)
+```
+
+Une grande majorité (75%) des répondant indique ne pas être impacté par leur santé mentale ou physique plus de 5 jours par mois. 
+Un répondant sur 4 indique toutefois être impacté entre 5 et 12 jours par mois par sa santé mentale ou physique, ce qui est non négligeable.
+
+
+
+
+3. Mauvaise santé mentale
+
+```{r message=FALSE}
+
+ggplot(subset(brfss, !is.na(MENTHLTH)), aes(x=MENTHLTH,fill=MENTHLTH)) + 
+  geom_boxplot(fill="plum2",notch=TRUE,outlier.colour="black", outlier.shape=8,
+               outlier.size=1) + theme_economist() +
+  ggtitle("Nombre de jours impactés par la santé mentale / état émo.") + labs(x = "Nombre de jours") + xlim(0,30)
+```
+
+Au vu de ces résultats, il semblerait que la santé mentale pèse presque autant que la santé physique pour les répondants.
+Effectivement, ici, 75% des répondants indique ne pas être impacté négativement plus de 2 ou 3 jours par mois par leur santé mentale ou état émotionnel, contre 25% qui le seraient entre 2/3 à 5 jours par mois.
+
+
+4.Nombre de jours de dépression au cours des 30 derniers jours
+
+```{r message=FALSE}
+
+ggplot(subset(brfss, !is.na(QLMENTL2)), aes(x=QLMENTL2,fill=QLMENTL2)) + 
+  geom_boxplot(fill="mistyrose",notch=TRUE,outlier.colour="black", outlier.shape=8,
+               outlier.size=1) + theme_economist() +
+  ggtitle("Nombre de jours dépressifs au cours du dernier mois") + labs(x = "Nombre de jours")
+```
+
+Au vu du graphique, on peut se demander si ce ne sont pas les humeurs dépressives dont il est question dans la question précédente étant donné les résultats similaires entre cette question et la question précédente.
+
+
+5. Nombre de jours d'anxiété au cours des 30 derniers jours
+
+```{r message=FALSE}
+
+ggplot(subset(brfss, !is.na(QLSTRES2)), aes(x=QLSTRES2,fill=QLSTRES2)) + 
+  geom_boxplot(fill="linen",notch=TRUE,outlier.colour="black", outlier.shape=8,
+               outlier.size=1) + theme_economist() +
+  ggtitle("Nombre de jours anxieux au cours du dernier mois") + labs(x = "Nombre de jours") + xlim(0,30)
+```
+
+Etonnament, on observe un nombre de jours impactés par l'anxiété plus important que le nombre de jours impactés par la santé mentale ou l'état émotionnel.
+Effectivement, ici, 75% des répondants indique souffrir d'anxiété jusqu'à 5 jours par mois et les 25% restants entre 5 et 12 jours par mois.
+Ce sont par ailleurs les mêmes résultats que ceux relatifs à la question concernant l'impact de la santé physique et/ou mentale.
+
+
+6. Diagnostic de dépression
+
+```{r message=FALSE}
+# Tableau des fréquences
+freq(brfss$ADDEPEV2_FACTOR)
+
+ggplot(subset(brfss,!is.na(ADDEPEV2_FACTOR)), aes(x = as.factor(ADDEPEV2_FACTOR),fill=ADDEPEV2_FACTOR)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  geom_text(aes(y = ((..count..)/sum(..count..)), label = scales::percent((..count..)/sum(..count..))), stat = "count", vjust = -0.25) +
+  scale_y_continuous(labels = percent) + theme_economist()+ labs(title = "Répartition de la dépression parmi les répondants", x = "Dépression", y = "Proportion de répondants") + scale_fill_discrete(name="Fréquence") + scale_fill_brewer(palette = "Reds") + theme(axis.text.x=element_text(size=10,vjust=.8, hjust=0.8),legend.position="none")
+```
+
+Près de 1 répondant sur 5 indique avoir eu un diagnostic de dépression. 
+
+7. Fréquence de support émotionnel perçu
+
+```{r message=FALSE}
+
+# Tableau des fréquences
+freq(brfss$EMTSUPRT_FACTOR)
+
+ggplot(subset(brfss,!is.na(EMTSUPRT_FACTOR)), aes(x = as.factor(EMTSUPRT_FACTOR),fill=EMTSUPRT_FACTOR)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  geom_text(aes(y = ((..count..)/sum(..count..)), label = scales::percent((..count..)/sum(..count..))), stat = "count", vjust = -0.25) +
+  scale_y_continuous(labels = percent) + theme_economist()+ labs(title = "Fréquence de Support émotionnel reçu", x = "Fréquence", y = "Proportion de répondants") + scale_fill_discrete(name="Fréquence") + scale_fill_brewer(palette = "PuBu") + theme(axis.text.x=element_text(size=10,vjust=.8, hjust=0.8),legend.position="none")
+```
+
+Il semblerait que la majorité des répondants perçoivent du support émotionnel de manière régulière. 
+
+8. Satisfaction par rapport à la vie
+
+```{r message=FALSE}
+
+# Tableau des fréquences
+freq(brfss$LSATISFY_FACTOR)
+
+ggplot(subset(brfss,!is.na(LSATISFY_FACTOR)), aes(x = as.factor(LSATISFY_FACTOR),fill=LSATISFY_FACTOR)) +
+  geom_bar(aes(y = (..count..)/sum(..count..))) +
+  geom_text(aes(y = ((..count..)/sum(..count..)), label = scales::percent((..count..)/sum(..count..))), stat = "count", vjust = -0.25) +
+  scale_y_continuous(labels = percent) + theme_economist()+ labs(title = "Niveau global de satisfaction des répondants", x = "Satisfaction", y = "Proportion de répondants") + scale_fill_discrete(name="Fréquence") + scale_fill_brewer(palette = "PuBu") + theme(axis.text.x=element_text(size=10,vjust=.8, hjust=0.8),legend.position="none")
+
+
+```
+
+Seuls 5% des répondants indiquent ne pas être satisfaits voire très insatisfaits par rapport à leur vie.
+
+### Santé mentale et tabagisme
+
+#### Mauvaise santé physique/mentale et tabagisme
+
+1. Selon le sexe
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(POORHLTH) & !is.na(SEX)), aes(x=X_SMOKER3_FACTOR, y=POORHLTH, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~SEX) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Nombre de jours impactés par la santé mentale/physique, tabagisme et sexe", x = "Statut", y = "Nb de jours impactés") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Tout d'abord, on remarque de nettes dfférences de jours impactés par la santé mentale/physique des répondants selon le fait qu'ils soient fumeurs ou non fumeurs. Effectivement, les fumeurs semblent être plus impactés dans leur vie par leur santé mentale et/ou physique que les non fumeurs.
+D'ailleurs, bien que les anciens fumeurs soient moins impactés que les non fumeurs, il semblerait qu'ils soient tout de même plus impactés que les personnes n'ayant jamais fumé.
+
+Aussi, on remarque une différence selon le sexe puisque les femmes rapportent davantage de jours impactées que les hommes.
+
+
+2. Selon l'âge
+
+```{r message=FALSE}
+
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(POORHLTH) & !is.na(X_AGE_G_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=POORHLTH, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_AGE_G_FACTOR) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Nombre de jours impactés par la santé mentale/physique, tabagisme et âge", x = "Statut", y = "Nombre de jours impactés") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Les distinctions fumeurs/non fumeurs par rapport à la santé mentale/physique semblent s'intensifier avec l'âge. 
+Effectivement, les différences deviennent saillantes parmi les répondants ayant plus de 35 ans, notamment parmi la tranche d'âge 55-64ans. 
+
+3. Selon le statut matrimonial
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(POORHLTH) & !is.na(MARITAL)), aes(x=X_SMOKER3_FACTOR, y=POORHLTH, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~MARITAL) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Nombre de jours impactés par la santé mentale/physique, tabagisme et statut matrimonial", x = "Statut", y = "Nombre de jours impactés") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+De manière générale, on remarque des différences fumeurs/non fumeurs quelques soient le statut marital.
+On remarque toutefois que la santé mentale/physique semble impacter négativement davantage les répondants divorcés, veufs et séparés.
+
+
+4. Selon le niveau d'études 
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(POORHLTH) & !is.na(X_EDUCAG_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=POORHLTH, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_EDUCAG_FACTOR) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Nombre de jours impactés par la santé mentale/physique, tabagisme et niveau d'études", x = "Statut", y = "Nombre de jours impactés") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Parmi les diplômés de l'université, les différences selon que les répondants soient fumeurs ou non fumeurs, bien que présentes, ne sont pas alarmantes.
+Aussi, on remarque qu'ils ne semblent pas énormément impactés par leur santé mentale et/ou physique de manière générale. En revanche, les répondants sans diplôme présentent des résultats préoccupants étant donné qu'en moyenne, un non fumeur sans diplôme rapporte une qualité de vie liée à la santé inférieure à un fumeur journalier diplômé de l'université. 
+
+
+5. Selon le niveau de revenus
+
+```{r message=FALSE}
+######## Santé mentale/phy, tabagisme et niveau de revenus
+
+
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(POORHLTH) & !is.na(X_INCOMG_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=POORHLTH, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_INCOMG_FACTOR,ncol=5) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Nombre de jours impactés par la santé mentale/physique, tabagisme et revenus", x = "Statut", y = "Nombre de jours impactés") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+De manière encore plus préoccupante que précédemment avec les niveaux d'études, les niveaux de revenus semblent beaucoup impacter la santé mentale/physique des répondants.
+Bien que des différences fumeurs/non fumeurs soient visibles, ce sont surtout les niveaux de revenus qui semblent impacter ici la santé.
+
+#### Mauvaise santé mentale et tabagisme
+
+1. Selon le sexe
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(MENTHLTH) & !is.na(SEX)), aes(x=X_SMOKER3_FACTOR, y=MENTHLTH, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~SEX) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, santé mentale et sexe", x = "Statut", y = "Nombre de jours impactés") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+On observe de nettes différences en terme de santé mentale selon que les répondants soient fumeurs ou non fumeurs.
+Aussi, les femmes déclarent plus de jours impactés que les hommes.
+
+
+2. Selon l'âge
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(MENTHLTH) & !is.na(X_AGE_G_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=MENTHLTH, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_AGE_G_FACTOR) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, santé mentale et âge", x = "Statut", y = "Nombre de jours impactés") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Ici, on remarque notamment une augmentation de jours impactés par la santé mentale avec la jeunesse. Effectivement, plus les répondants sont jeunes, plus ils déclarent un nombre de jours par mois impacté par leur santé mentale élevé.
+Aussi, on remarque une distinction fumeur / non fumeur quelque soient les âges.
+
+3. Selon le statut matrimonial
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(MENTHLTH) & !is.na(MARITAL)), aes(x=X_SMOKER3_FACTOR, y=MENTHLTH, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~MARITAL) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, santé mentale et statut matrimonial", x = "Statut", y = "Nombre de jours impactés") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Ici, on remarque surtout que les fumeurs séparés semblent plus impactés par leur santé mentale.
+Aussi, le fait d'être marié pourrait être un facteur protecteur étant donné le nombre de jours impacté plus faible.
+
+
+4. Selon le niveau d'études
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(MENTHLTH) & !is.na(X_EDUCAG_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=MENTHLTH, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_EDUCAG_FACTOR) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, santé mentale et niveau d'études", x = "Statut", y = "Nombre de jours impactés") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Il semblerait que les fumeurs sans diplôme soient les plus impactés par leur santé mentale d'après ce graphique.
+
+5. Selon le niveau de revenus
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(MENTHLTH) & !is.na(X_INCOMG_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=MENTHLTH, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_INCOMG_FACTOR,ncol=5) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, santé mentale et revenus", x = "Statut", y = "Nombre de jours impactés") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Les revenus semblent également impacter de manière importante la santé mentale des répondants. Effectivement, plus les revenus sont bas, plus les répondants déclarent des jours impactés par la santé mentale importants. Les disctinctions fumeurs/non fumeurs sont également visibles sur ce graphique.
+
+#### Humeur dépressive et tabagisme
+
+1. Selon le sexe
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(QLMENTL2) & !is.na(SEX)), aes(x=X_SMOKER3_FACTOR, y=QLMENTL2, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~SEX) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, humeur dépressive et sexe", x = "Statut", y = "Nb de jours avec humeur dépressive") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Si l'humeur dépressive semble varier selon le tabagisme, elle diffère également selon le sexe, les femmes déclarant davantage de jours dépressifs que les hommes.
+
+2. Selon l'âge
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(QLMENTL2) & !is.na(X_AGE_G_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=QLMENTL2, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_AGE_G_FACTOR) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, humeur dépressive et âge", x = "Statut", y = "Nombre de jours avec humeur dépressive") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Une nette distinction ici est visible selon le fait d'être fumeur ou non fumeur. Toutefois, on remarque que les répondants de 65 ans et plus déclarent moins de jours dépressifs que les répondants de moins de 65 ans.
+
+3. Selon le statut matrimonial
+
+```{r}
+######## Humeur dépressive, tabagisme et statut matrimonial
+
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(QLMENTL2) & !is.na(MARITAL)), aes(x=X_SMOKER3_FACTOR, y=QLMENTL2, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~MARITAL) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, humeur dépressive et statut matrimonial", x = "Statut", y = "Nombre de jours avec humeur dépressive") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+L'humeur dépressive semble davantage présente chez les répondants divorcés, séparés et jamais mariés.
+Aussi, quels que soient le statut matrimonial, on observe une différence d'humeur dépressive selon le fait d'être fumeur ou non fumeur, bien qu'elle soit plus marquée auprès des séparés et divorcés.
+
+4. Selon le niveau d'études
+
+```{r message=FALSE}
+######## Humeur dépressive, tabagisme et niveau d'études
+
+
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(QLMENTL2) & !is.na(X_EDUCAG_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=QLMENTL2, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_EDUCAG_FACTOR) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, humeur dépressive et niveau d'études", x = "Statut", y = "Nombre de jours avec humeur dépressive") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Les différences d'humeur sont davantage visibles auprès des répondants fumeurs sans diplôme ou ayant un diplôme du lycée. 
+
+5. Selon le niveau de revenus
+
+```{r message=FALSE}
+######## Humeur dépressive, tabagisme et niveau de revenus
+
+
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(QLMENTL2) & !is.na(X_INCOMG_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=QLMENTL2, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_INCOMG_FACTOR,ncol=5) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, humeur dépressive et revenus", x = "Statut", y = "Nombre de jours avec humeur dépressive") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+L'humeur dépressive semble diminuer avec les revenus. Les différences sont également visibles ici selon le fait d'être fumeur ou non fumeur.
+
+#### Humeur anxieuse et tabagisme
+
+1. Selon le sexe
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(QLSTRES2) & !is.na(SEX)), aes(x=X_SMOKER3_FACTOR, y=QLSTRES2, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~SEX) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, humeur anxieuse et sexe", x = "Statut", y = "Nombre de jours avec humeur anxieuse") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Les répondants les plus impactés par l'humeur anxieuse semblent être les femmes fumeuses d'après ce graphique.
+
+2. Selon l'age
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(QLSTRES2) & !is.na(X_AGE_G_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=QLSTRES2, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_AGE_G_FACTOR) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, humeur anxieuse et âge", x = "Statut", y = "Nombre de jours avec humeur anxieuse") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+L'humeur anxieuse semble diminuer avec l'âge. Aussi, on remarque de nettes différences selon le fait d'être fumeur ou non fumeur, bien que ces dernières soient plus floues auprès des 18-24 ans.
+
+
+3. Selon le statut matrimonial
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(QLSTRES2) & !is.na(MARITAL)), aes(x=X_SMOKER3_FACTOR, y=QLSTRES2, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~MARITAL) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, humeur anxieuse et statut matrimonial", x = "Statut", y = "Nombre de jours avec humeur anxieuse") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+S'il est visible que les fumeurs sont davantage anxieux que les non fumeurs, les répondants mariés et veufs semblent en revanche moins anxieux. 
+
+4. Selon le niveau d'études
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(QLSTRES2) & !is.na(X_EDUCAG_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=QLSTRES2, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_EDUCAG_FACTOR) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, humeur anxieuse et niveau d'études", x = "Statut", y = "Nombre de jours avec humeur anxieuse") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+L'humeur anxieuse semble diminuer avec les niveaux de diplôme. 
+De nettes différences sont visibles selon le fait d'être fumeur ou non fumeur.
+
+5. Selon le niveau de revenus
+
+```{r message=FALSE}
+ggplot(subset(brfss,!is.na(X_SMOKER3_FACTOR) & !is.na(QLSTRES2) & !is.na(X_INCOMG_FACTOR)), aes(x=X_SMOKER3_FACTOR, y=QLSTRES2, fill=X_SMOKER3_FACTOR)) + geom_boxplot() + 
+  facet_wrap(~X_INCOMG_FACTOR,ncol=5) + scale_fill_brewer(palette = "Pastel2") + labs(title = "Tabagisme, humeur anxieuse et revenus", x = "Statut", y = "Nombre de jours avec humeur anxieuse") + scale_fill_discrete(name="Statut") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Ici aussi, l'humeur anxieuse diminue avec les revenus.
+Cette dernière est très préoccupante auprès des fumeurs percevant moins de 15000$ annuels. 
+
+#### Dépression et tabagisme
+
+1. Selon le sexe
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(X_SMOKER3_FACTOR) & !is.na(ADDEPEV2_FACTOR) & !is.na(SEX)), aes(x = X_SMOKER3_FACTOR, fill = ADDEPEV2_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~SEX) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Dépression selon le tabagisme et le sexe", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Dépression") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+La dépression semble davantage présente auprès des femmes fumeuses.
+Toutefois, quel que soit le sexe, on observe une variation de la prévalence de la dépression selon le statut par rapport au tabac. 
+
+2. Selon l'âge
+
+```{r message=FALSE}
+
+ggplot(subset(brfss, !is.na(X_SMOKER3_FACTOR) & !is.na(ADDEPEV2_FACTOR) & !is.na(X_AGE_G_FACTOR)), aes(x = X_SMOKER3_FACTOR, fill = ADDEPEV2_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~X_AGE_G_FACTOR) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Dépression selon le tabagisme et l'âge", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Dépression") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Il semblerait que la prévalence de la dépression soit inférieure après des répondants de 65 ans et plus. 
+Toutefois, quel que soit l'âge du répondant, on observe une distinction selon le fait d'être fumeur ou non fumeur.
+
+3. Selon le statut matrimonial
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(X_SMOKER3_FACTOR) & !is.na(ADDEPEV2_FACTOR) & !is.na(MARITAL)), aes(x = X_SMOKER3_FACTOR, fill = ADDEPEV2_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~MARITAL) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Dépression selon le tabagisme et le statut matrimonial", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Dépression") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+La prévalence de la dépression semble moins présente auprès des répondants mariés. 
+
+4. Selon le niveau d'études
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(X_SMOKER3_FACTOR) & !is.na(ADDEPEV2_FACTOR) & !is.na(X_EDUCAG_FACTOR)), aes(x = X_SMOKER3_FACTOR, fill = ADDEPEV2_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~X_EDUCAG_FACTOR) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Dépression selon le tabagisme et le niveau d'études", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Dépression") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+La dépression semble davantage présente auprès des répondants sans diplôme.
+
+5. Selon le niveau de revenus
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(X_SMOKER3_FACTOR) & !is.na(ADDEPEV2_FACTOR) & !is.na(X_INCOMG_FACTOR)), aes(x = X_SMOKER3_FACTOR, fill = ADDEPEV2_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~X_INCOMG_FACTOR) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Dépression selon le tabagisme et le niveau de revenus", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Dépression") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Il semblerait également, au vu du graphique, que la prévalence de la dépression diminue avec les revenus.
+
+#### Support émotionnel et tabagisme
+
+1. Selon le sexe
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(EMTSUPRT_FACTOR) & !is.na(X_SMOKER3_FACTOR) & !is.na(SEX)), aes(x = X_SMOKER3_FACTOR, fill = EMTSUPRT_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~SEX) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Support émotionnel selon le tabagisme et le sexe", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Spt émotionnel") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Il ne semble pas y avoir de nette distinction selon le sexe. Aussi, le support émotionnel semble varier légèrement selon le fait d'être fumeur ou non fumeur.
+
+2. Selon l'âge
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(EMTSUPRT_FACTOR) & !is.na(X_SMOKER3_FACTOR) & !is.na(X_AGE_G_FACTOR)), aes(x = X_SMOKER3_FACTOR, fill = EMTSUPRT_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~X_AGE_G_FACTOR) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Support émotionnel selon le tabagisme et l'âge", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Spt émotionnel") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+On observe peu de différences selon l'âge.
+
+3. Selon le statut matrimonial
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(EMTSUPRT_FACTOR) & !is.na(X_SMOKER3_FACTOR) & !is.na(MARITAL)), aes(x = X_SMOKER3_FACTOR, fill = EMTSUPRT_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~MARITAL) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Support émotionnel selon le tabagisme et le statut matrimonial", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Spt émotionnel") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Les personnes mariées déclarent recevoir davantage de soutien que les autres répondants.
+
+4. Selon le niveau d'études
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(EMTSUPRT_FACTOR) & !is.na(X_SMOKER3_FACTOR) & !is.na(X_EDUCAG_FACTOR)), aes(x = X_SMOKER3_FACTOR, fill = EMTSUPRT_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~X_EDUCAG_FACTOR) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Support émotionnel selon le tabagisme et le niveau d'études", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Spt émotionnel") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Les répondants sans diplôme et fumeurs déclarent recevoir moins de soutien que les autres répondants.
+
+5. Selon le niveau de revenus
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(EMTSUPRT_FACTOR) & !is.na(X_SMOKER3_FACTOR) & !is.na(X_INCOMG_FACTOR)), aes(x = X_SMOKER3_FACTOR, fill = EMTSUPRT_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~X_INCOMG_FACTOR) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Support émotionnel selon le tabagisme et le niveau de revenus", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Spt émotionnel") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+La perception du support émotionnel semble en revanche augmenter avec les revenus.
+
+#### Niveau de satisfaction et tabagisme
+
+1. Selon le sexe
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(LSATISFY_FACTOR) & !is.na(X_SMOKER3_FACTOR) & !is.na(SEX)), aes(x = X_SMOKER3_FACTOR, fill = LSATISFY_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~SEX) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Niveau de satisfaction selon le tabagisme et le sexe", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Satisfaction") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Le niveau de satisfaction par rapport à la vie semble différer selon le tabagisme. En revanche, il ne semblerait pas y avoir de différence selon le sexe des répondants.
+
+2. Selon l'âge
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(LSATISFY_FACTOR) & !is.na(X_SMOKER3_FACTOR) & !is.na(X_AGE_G_FACTOR)), aes(x = X_SMOKER3_FACTOR, fill = LSATISFY_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~X_AGE_G_FACTOR) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Niveau de satisfaction selon le tabagisme et l'âge", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Satisfaction") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Le niveau de satisfaction par rapport à la vie semble augmenter légèrement avec l'âge.
+
+3. Selon le statut matrimonial
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(LSATISFY_FACTOR) & !is.na(X_SMOKER3_FACTOR) & !is.na(MARITAL)), aes(x = X_SMOKER3_FACTOR, fill = LSATISFY_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~MARITAL) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Niveau de satisfaction selon le tabagisme et le statut matrimonial", x = "Tabagisme", y = "Proportion de répondants") + scale_fill_discrete(name="Satisfaction") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Les répondants mariés semblent davantage satisfaits par rapport à la vie que les autres répondants.
+
+4. Selon le niveau d'études
+
+```{r message=FALSE}
+ggplot(subset(brfss, !is.na(LSATISFY_FACTOR) & !is.na(X_SMOKER3_FACTOR) & !is.na(X_EDUCAG_FACTOR)), aes(x = X_SMOKER3_FACTOR, fill = LSATISFY_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~X_EDUCAG_FACTOR) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Niveau de satisfaction selon le tabagisme et le niveau d'études", x = "Tabagisme", y = "Pourcentage de répondants") + scale_fill_discrete(name="Satisfaction") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+```
+
+Le niveau de satisfaction par rapport à la vie semble augmenter avec le niveau de diplôme.
+Aussi, on observe de légères distinctions selon le tabagisme.
+
+5. Selon le niveau de revenus
+
+```{r message=FALSE}
+
+ggplot(subset(brfss, !is.na(LSATISFY_FACTOR) & !is.na(X_SMOKER3_FACTOR) & !is.na(X_INCOMG_FACTOR)), aes(x = X_SMOKER3_FACTOR, fill = LSATISFY_FACTOR)) +
+  geom_bar(colour = "black",position = "fill") + facet_wrap(~X_INCOMG_FACTOR) +
+  scale_fill_brewer(palette = "Pastel1") + theme_economist()+ labs(title = "Niveau de satisfaction selon le tabagisme et le niveau de revenus", x = "Tabagisme", y = "Pourcentage de répondants") + scale_fill_discrete(name="Satisfaction") + theme(axis.text.x=element_text(angle=30,size=10,vjust=.8, hjust=0.8))
+
+
+```
+
+Le niveau de satisfaction semble en revanche beaucopu différer selon les revenus des répondants.
+Effectivement, plus les répondants ont des revenus élevés, plus leur satisfaction est élevée. 
+
+## Statistiques
+
+### Variables quantitatives : Corrélations et associations
+
+1. Normalité des variables
+
+Mauvaise santé physique / mentale
+```{r message=FALSE}
+qqnorm(brfss$POORHLTH) ; qqline(brfss$POORHLTH)
+hist(brfss$POORHLTH)
+```
+
+Mauvaise santé mentale
+
+```{r message=FALSE}
+qqnorm(brfss$MENTHLTH) ; qqline(brfss$MENTHLTH)
+hist(brfss$MENTHLTH)
+```
+
+Humeur dépressive
+
+```{r message=FALSE}
+qqnorm(brfss$QLMENTL2) ; qqline(brfss$QLMENTL2)
+hist(brfss$QLMENTL2)
+```
+
+Humeur anxieuse
+
+```{r message=FALSE}
+qqnorm(brfss$QLSTRES2) ; qqline(brfss$QLSTRES2)
+hist(brfss$QLSTRES2)
+```
+
+Aucune de ces variables ne semblent suivre une loi normale.
+Nous effectuerons donc des tests de corrélation de Spearman pour mesurer les corrélations entre variables.
+
+2. Tests de corrélation de Spearman 
+
+Mauvaise santé mentale/physique et mauvaise santé mentale
+```{r message=FALSE}
+cor.test(brfss$POORHLTH,brfss$MENTHLTH, method="spearman")
+```
+
+La relation entre mauvaise santé mentale et/ou physique et mauvaise santé mentale est de 0.18, ce qui est peu élevé.  
+
+Humeur dépressive et humeur anxieuse
+```{r message=FALSE}
+cor.test(brfss$QLMENTL2,brfss$QLSTRES2, method="spearman")
+```
+
+La corrélation entre humeur dépressive et humeur anxieuse est de 0.63. La relation entre ces deux variables semble donc relativement forte.
+
+Mauvaise santé mentale et humeur dépressive
+```{r message=FALSE}
+cor.test(brfss$MENTHLTH,brfss$QLMENTL2, method="spearman")
+```
+
+L'humeur dépressive et la mauvaise santé mentale semblent également fortement liées étant donné le coefficient de corrélation évalué à 0.67.
+
+Mauvaise santé mentale et humeur anxieuse
+```{r message=FALSE}
+cor.test(brfss$QLSTRES2,brfss$MENTHLTH, method="spearman")
+```
+
+On observe également une corrélation relativement élevée entre mauvaise santé mentale et humeur anxieuse, avec un coefficient s'élevant à 0.57.
+
+3. Matrice de corrélation
+
+```{r message=FALSE}
+
+X <- brfss %>%
+  select(
+    MENTHLTH,
+    POORHLTH,
+    QLSTRES2,
+    QLMENTL2
+  )
+
+
+rquery.cormat(X,graphType = "correlogram")
+
+corstars(X, result="html")
+```
+
+On remarque notamment que l'humeur dépressive est corrélée fortement à l'humeur anxieuse ainsi qu'à une mauvaise santé mentale.
+
+### Variables qualitatives : Tests d'indépendance du Chi²
+
+1. Âge et tabagisme 
+
+```{r message=FALSE}
+## Age et tabagisme
+
+
+tab <- table(brfss$X_RFSMOK3_FACTOR,brfss$X_AGE_G_FACTOR,deparse.level = 2)
+prop.table(tab,1)
+prop.table(tab,2)
+
+
+test <- chisq.test(brfss$X_AGE_G_FACTOR,brfss$SMOKDAY2_FACTOR,correct=FALSE)
+test
+test$observed #: la matrice observée de départ.
+test$expected #: la matrice attendue sous l'hypothèse nulle d'absence de biais.
+
+
+balloonplot(tab)
+```
+
+Il semblerait ainsi que l'âge et le tabagisme ne soient pas indépendants. (p-value < 2.2e-16)
+Aussi, on observe moins de fumeurs avec l'âge.
+
+2. Sexe et tabagisme
+
+```{r message=FALSE}
+## Sexe et tabagisme
+
+
+tab <- table(brfss$SMOKDAY2_FACTOR,brfss$SEX,deparse.level = 2)
+prop.table(tab,1)
+prop.table(tab,2)
+
+
+test <- chisq.test(brfss$SEX,brfss$SMOKDAY2_FACTOR,correct=FALSE)
+test
+test$observed #: la matrice observée de départ.
+test$expected #: la matrice attendue sous l'hypothèse nulle d'absence de biais.
+
+
+balloonplot(tab)
+
+
+
+```
+
+On a donc une différence significative de prévalence de fumeur qui ne pourrait pas être expliquée par le hasard à lui tout seul (p très inférieur à 5%).
+
+3. Statut marital et tabagisme
+
+```{r message=FALSE}
+tab <- table(brfss$SMOKDAY2_FACTOR,brfss$MARITAL,deparse.level = 2)
+prop.table(tab,1)
+prop.table(tab,2)
+
+
+test <- chisq.test(brfss$MARITAL,brfss$SMOKDAY2_FACTOR,correct=FALSE)
+test
+test$observed #: la matrice observée de départ.
+test$expected #: la matrice attendue sous l'hypothèse nulle d'absence de biais.
+
+
+balloonplot(tab)
+```
+
+Le statut marital et le tabagisme ne semblent également pas indépendants au vu du résultat du test d'indépendance du Chi². 
+
+
+4. Niveau d'éducation et tabagisme
+
+```{r message=FALSE}
+tab <- table(brfss$SMOKDAY2_FACTOR,brfss$X_EDUCAG_FACTOR,deparse.level = 2)
+prop.table(tab,1)
+prop.table(tab,2)
+
+
+test <- chisq.test(brfss$X_EDUCAG_FACTOR,brfss$SMOKDAY2_FACTOR,correct=FALSE)
+test
+
+test$observed #: la matrice observée de départ.
+test$expected #: la matrice attendue sous l'hypothèse nulle d'absence de biais.
+
+
+balloonplot(tab)
+```
+
+De la même façon, niveau d'éducation et tabagisme ne sont pas indépendants non plus.
+
+5. Catégories socio-professionnelles et tabagisme
+
+```{r message=FALSE}
+tab <- table(brfss$SMOKDAY2_FACTOR,brfss$EMPLOY1_FACTOR,deparse.level = 2)
+prop.table(tab,1)
+prop.table(tab,2)
+
+
+test <- chisq.test(tab,correct=FALSE)
+test
+test$observed #: la matrice observée de départ.
+test$expected #: la matrice attendue sous l'hypothèse nulle d'absence de biais.
+
+
+balloonplot(tab)
+```
+
+Les catégories socio-professionnelles et le tabagisme ne sont pas indépendants non plus au vu du test du Chi².
+
+6. Revenus et tabagisme
+
+```{r message=FALSE}
+## Revenus et tabagisme
+
+tab <- table(brfss$SMOKDAY2_FACTOR,brfss$X_INCOMG_FACTOR,deparse.level = 2)
+
+balloonplot(tab)
+
+prop.table(tab,1)
+prop.table(tab,2)
+
+
+test <- chisq.test(tab,correct=FALSE)
+test
+test$observed #: la matrice observée de départ.
+test$expected #: la matrice attendue sous l'hypothèse nulle d'absence de biais.
+```
+
+Les niveaux de revenus et le tabagisme ne sont pas indépendants non plus au vu du test du Chi².
+
+
+7. Mauvaise santé mentale et tabagisme
+
+```{r message=FALSE}
+
+tab <- table(brfss$SMOKDAY2_FACTOR,brfss$MENTHLTH_FACTOR,deparse.level = 2)
+
+balloonplot(tab)
+prop.table(tab,1)
+prop.table(tab,2)
+
+
+test <- chisq.test(tab,correct=FALSE)
+test
+test$observed #: la matrice observée de départ.
+test$expected #: la matrice attendue sous l'hypothèse nulle d'absence de biais.
+```
+
+L'impact de la santé mentale et le tabagisme ne sont pas indépendants non plus au vu du test du Chi².
+
+8. Humeur dépressive et tabagisme
+
+```{r message=FALSE}
+tab <- table(brfss$SMOKDAY2_FACTOR,brfss$QLMENTL2_FACTOR,deparse.level = 2)
+
+balloonplot(tab)
+prop.table(tab,1)
+prop.table(tab,2)
+
+
+test <- chisq.test(tab,correct=FALSE)
+test
+test$observed #: la matrice observée de départ.
+test$expected #: la matrice attendue sous l'hypothèse nulle d'absence de biais.
+```
+
+L'humeur dépressive et le tabagisme ne sont pas indépendants non plus au vu du test du Chi².
+
+9. Humeur anxieuse et tabagisme
+
+```{r message=FALSE}
+tab <- table(brfss$SMOKDAY2_FACTOR,brfss$QLSTRES2_FACTOR,deparse.level = 2)
+
+balloonplot(tab)
+prop.table(tab,1)
+prop.table(tab,2)
+
+
+test <- chisq.test(tab,correct=FALSE)
+test
+test$observed #: la matrice observée de départ.
+test$expected #: la matrice attendue sous l'hypothèse nulle d'absence de biais.
+```
+
+L'humeur anxieuse et le tabagisme ne sont pas indépendants non plus au vu du test du Chi².
+
+10. Dépression et tabagisme
+
+```{r message=FALSE}
+## Dépression et tabagisme
+
+tab <- table(brfss$SMOKDAY2_FACTOR,brfss$ADDEPEV2_FACTOR,deparse.level = 2)
+
+balloonplot(tab)
+prop.table(tab,1)
+prop.table(tab,2)
+
+
+test <- chisq.test(tab,correct=FALSE)
+test
+test$observed #: la matrice observée de départ.
+test$expected #: la matrice attendue sous l'hypothèse nulle d'absence de biais.
+```
+
+Enfin, la dépression et le tabagisme ne sont pas indépendants au vu des résultats du test du Chi².
+
+
+### Analyse des Correspondances Multiples 
+
+L'ACM est une méthode qui va nous permettre d'étudier l'association entre nos variables qualitatives.
+
+#### Préparation des données
+
+```{r message=FALSE}
+#### Sélection des variables
+
+X = brfss %>%
+  select(
+    SEX,
+    X_AGE_G_FACTOR,
+    MARITAL,
+    X_EDUCAG_FACTOR,
+    EMPLOY1_FACTOR,
+    RENTHOM1_FACTOR,
+    X_INCOMG_FACTOR,
+    ADDEPEV2_FACTOR,
+    X_RFSMOK3)
+
+#### X_RFSMOK3 en tant que facteur
+
+X$X_RFSMOK3 <- as.factor(X$X_RFSMOK3)
+
+#### Suppression des valeurs manquantes
+
+X <- drop_na(X)
+```
+
+#### Réalisation de l'ACM
+
+1. Réalisation de l'ACM
+
+```{r message=FALSE}
+
+# Dimension de X
+dim(X)
+
+# Réalisation de l'ACP avec les variables relatives à la dépression et au tabagisme en tant que variables qualitatives supplémentaires
+
+res.mca <- MCA(X,quali.sup=8:9,graph = FALSE)
+```
+
+2. Extraction et visualisatoin des valeurs propres/variances des composantes principales de l'ACM
+
+```{r message=FALSE}
+# Extraction des valeurs propres/variances des composantes principales
+eig.val <- get_eigenvalue(res.mca)
+head(eig.val)
+
+# Graphique des valeurs propres/variances des composantes principales
+fviz_screeplot(res.mca, addlabels = TRUE, ylim = c (0, 45))
+```
+
+Ainsi, les axes 1 et 2 de l'ACM expliquent à eux deux près de 17% de la variance.
+
+3. Résumé de l'ACM
+
+```{r message=FALSE}
+# Résumé 
+summary(res.mca)
+```
+
+
+
+4. Corrélation entre les variables et les axes principaux
+
+```{r message=FALSE}
+#corrélation entre les variables et les axes principaux de l’ACM
+fviz_mca_var(res.mca, choice = "mca.cor",
+            repel = TRUE, 
+            ggtheme = theme_minimal ())
+```
+
+On remarque que les variables relatives à l'âge, les CSP, le statut matrimonial et le statut par rapport au logement sont les plus corrélées à l'axe 1.
+Par rapport à l'axe 2, ce sont le statut matrimonial, l'âge et les CSP qui sont les plus corrélées. 
+Le sexe, le niveau d'éducation, la dépression ainsi que le tabagisme sont peu corrélés aux deux axes. 
+
+
+5. Contribution des modalités des variables aux dimensions
+
+Dimension 1
+```{r message=FALSE}
+# Contributions des variables à la dimension 1
+fviz_contrib (res.mca, choice = "var", axes = 1, top = 15)
+```
+
+Les modalités :
+- Jamais marié,
+- Locataire,
+- 18-24 ans,
+- Revenus < 15000$ annuels,
+- Etudiant
+sont celles ayant le plus contribué à l'axe 1.
+
+
+Dimension 2
+```{r message=FALSE}
+# Contributions des variables à la dimension 2
+fviz_contrib (res.mca, choice = "var", axes = 2, top = 15)
+```
+
+Les modalités :
+- 65ans et plus,
+- Veuf,
+- Retraité,
+- Employé,
+- Revenus supérieurs à 50 000$ annuels
+sont celles ayant le plus contribué à l'axe 2.
+
+6. Visualisation des catégories des variables et de leur contribution aux axes
+
+```{r message=FALSE}
+fviz_mca_var(res.mca, col.var = "contrib",
+             gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"), 
+             repel = TRUE, 
+             ggtheme = theme_minimal()
+             )
+
+
+```
+
+Ce graphique nous amène à nous intérroger sur les liens entre les modalités :
+- Dépression et Femme, Divorcé, Diplôme du lycée, Fumeur
+- Pas de dépression et Homme, 55-64ans, Non fumeur, revenus de 35 à 50 000$
+
+
+
+### Etude de l'effet du tabagisme sur la dépression
+
+
+Etant donnée les visualisations ainsi que les non indépendances relevées plus tôt entre plusieurs variables socio-démographiques avec le tabagisme, nous avons décidé, afin de limiter les biais dans l'étude du tabagisme sur la dépression et de nous rapprocher des essais randomisés contrôlés, de nous baser sur des méthodes d'appariement.
+
+
+
+#### Correspondance exacte avec MatchIT
+
+##### Théorie
+
+L'appariement exact est une forme d'appariement de strates qui implique la création de sous-classes basées sur des combinaisons uniques de valeurs de covariables et l'affectation de chaque unité dans leur sous-classe correspondante de sorte que seules les unités avec des valeurs de covariables identiques soient placées dans la même sous-classe. 
+Toutes les unités appartenant à des sous-classes dépourvues d'unités traitées ou contrôlées seront supprimées. L'appariement exact est la méthode d'appariement la plus puissante en ce sens qu'aucune hypothèse de forme fonctionnelle n'est requise sur le modèle de traitement ou de résultat pour que la méthode élimine les facteurs de confusion dus aux covariables mesurées; les distributions de covariables sont exactement équilibrées. 
+
+
+Pour effectuer une correspondance exacte sur toutes les covariables fournies avec MatchIT, l'argument correspondant à la méthode peut être défini sur "exact". 
+
+
+
+##### Application
+
+1. Préparation des données 
+
+Nous avons décidé au vu des résultats précédents d'effectuer l'appariement sur les variables suivantes :
+- sexe,
+- age,
+- statut matrimonial,
+- niveau d'éducation,
+- niveau de revenus.
+
+```{r message=FALSE}
+# Sélection des variables et suppression des valeurs manquantes
+
+brfss_asp <- brfss%>%
+  select(
+    SEX,
+    X_AGE_G_FACTOR,
+    MARITAL,
+    X_EDUCAG_FACTOR,
+    X_INCOMG_FACTOR,
+    X_RFSMOK3,
+    ADDEPEV2)
+
+brfss_asp <- drop_na(brfss_asp)
+
+
+# Découpage des variables catégorielles
+
+brfss_asp_match <- splitfactor(data = brfss_asp, var.name = c("X_AGE_G_FACTOR","MARITAL",'X_EDUCAG_FACTOR','X_INCOMG_FACTOR'),
+                         replace = TRUE,
+                         drop.level=NULL,
+                         drop.first=FALSE)
+
+
+# Renommage des variables
+
+brfss_asp_match <- brfss_asp_match %>% 
+  rename(
+    Age_18_24ans = `X_AGE_G_FACTOR_18-24 ans`,
+    Age_25_34ans = `X_AGE_G_FACTOR_25-34 ans`,
+    Age_35_44ans = `X_AGE_G_FACTOR_35-44 ans`,
+    Age_45_54ans = `X_AGE_G_FACTOR_45-54 ans`,
+    Age_55_64ans = `X_AGE_G_FACTOR_55-64 ans`,
+    Age_plus_64 = `X_AGE_G_FACTOR_65ans et plus`,
+    Marie = MARITAL_Marié,
+    Divorce = MARITAL_Divorcé,
+    Veuf = MARITAL_Veuf,
+    Couple_nn_marie = `MARITAL_Membre d'un couple non marié`,
+    Separe = `MARITAL_Séparé`,
+    Jamais_marie = `MARITAL_Jamais marié`,
+    Sans_diplome = `X_EDUCAG_FACTOR_Sans diplôme`,
+    Diplome_lycee = `X_EDUCAG_FACTOR_Diplôme du lycée`,
+    Suivi_universite = `X_EDUCAG_FACTOR_A étudié à l'univ.`,
+    Diplome_universite = `X_EDUCAG_FACTOR_Diplôme de l'université`,
+    Moins_15000 = `X_INCOMG_FACTOR_< 15 000`,
+    Entre_15_25000 = `X_INCOMG_FACTOR_15 - 25 000`,
+    Entre_25_35000 = `X_INCOMG_FACTOR_25 - 35 000`,
+    Entre_30_50000 = `X_INCOMG_FACTOR_35 - 50 000`,
+    Plus_50000 = `X_INCOMG_FACTOR_< 50 000`
+  )
+
+CreateTableOne(vars=c('SEX',"ADDEPEV2_FACTOR","Age_18_24ans","Age_25_34ans","Age_35_44ans","Age_45_54ans","Age_55_64ans","Age_plus_64","Marie","Divorce","Veuf","Separe","Jamais_marie","Couple_nn_marie","Sans_diplome","Diplome_lycee","Suivi_universite","Diplome_universite","Moins_15000","Entre_15_25000","Entre_25_35000","Entre_30_50000","Plus_50000"),
+               strata='X_RFSMOK3',
+               data=brfss_asp_match)
+```
+
+
+On observe qu'il y a 2174258 non fumeurs et 391069 fumeurs dans notre échantillon.
+
+Aussi, les 2 groupes (fumeurs et non fumeurs) ne sont pas équilibrés puisqu'il existe des différences significatives en fonction des variables socio-démographiques (voir p-value).Seule la modalité "entre 30 et 50000$ annuels" ne présente pas de différence significative.
+Il faut donc équilibrer les groupes en appariant les individus ayant des profils proches vis à vis de la variable fumeur et déterminer pour chaque individu le score de propension de la variable fumeur (c'est le profil par rapport au traitement) avec la fonction global linear model glm.
+
+En utilisant la méthode exacte, tous les individus auront exactement les mêmes scores de propension vis à vis du traitement.
+
+2. Appariement exact avec la fonction matchit
+
+```{r message=FALSE}
+#Appariement exact du score de propension
+
+
+m.out <- matchit(formula=X_RFSMOK3~SEX + Age_18_24ans + Age_25_34ans + Age_35_44ans + Age_45_54ans + Age_55_64ans + Age_plus_64 + Marie + Divorce + Veuf + Separe +
+                   Jamais_marie + Couple_nn_marie + Sans_diplome + Diplome_lycee + Suivi_universite + Diplome_universite + Moins_15000 + Entre_15_25000 + Entre_25_35000 +
+                   Entre_30_50000 + Plus_50000,method="exact",data=brfss_asp_match)
+```
+
+3. Affichage des résultats
+
+
+Affichage de quelques individus de la sous classe 1
+```{r message=FALSE}
+# Numéro de lignes des individus appariés
+
+IndApp <- subset(as.data.frame(m.out$subclass),!is.na(as.data.frame(m.out$subclass)))
+IndApp
+
+IndApp %>%
+  filter(`m.out$subclass` == '1') %>%
+  head()
+
+# Affichage d'individus appariés
+
+brfss_asp[7,];brfss_asp[119,];brfss_asp[144,];brfss_asp[145,];brfss_asp[189,];brfss_asp[262,]
+```
+
+Après vérification, ces 6 individus ayant été appariés dans la même sous classe présentent bien les mêmes caractéristiques (hormi pour le tabagisme et la dépression puisque nous n'apparions pas sur ces critères).
+
+4. Vérification de l'effet de l'appariement exact avec et sans prise en compte des poids
+
+
+```{r message=FALSE}
+# Tous les individus appariés
+
+m.final <- match.data(m.out)
+
+# Affichage des 6 premiers individus
+
+head(m.final,n=10)
+
+```
+
+m.final comprend toutes les colonnes + 2 supplémentaires : le poids (toujours égal à 1 pour le fait d'être fumeur) et la sous classe.
+Il faut donc prendre en compte le poids pour la détermination de l'impact du tabac sur la santé mentale.
+
+Sans la prise en compte des poids : 
+```{r message=FALSE}
+# On regarde sans la prise en compte des poids
+
+CreateTableOne(vars=c('SEX',"ADDEPEV2_FACTOR","Age_18_24ans","Age_25_34ans","Age_35_44ans","Age_45_54ans","Age_55_64ans","Age_plus_64","Marie","Divorce","Veuf","Separe","Jamais_marie","Couple_nn_marie","Sans_diplome","Diplome_lycee","Suivi_universite","Diplome_universite","Moins_15000","Entre_15_25000","Entre_25_35000","Entre_30_50000","Plus_50000"),
+               strata='X_RFSMOK3',
+               data=m.final)
+```
+
+Les différences sont toujours significatives hormi pour les 18-24 ans et les répondants ayant des revenus compris entre 30 000 et 50 00$ annuels.
+
+Avec la prise en compte des poids :
+```{r message=FALSE}
+# On regarde avec la prise en compte des poids
+
+m.final$SEX <- is.name(x="Femme")
+m.final$ADDEPEV2_FACTOR <- is.name(x="Dépression")
+
+
+a <- m.final * m.final$weights
+
+CreateTableOne(vars=c('SEX',"ADDEPEV2_FACTOR","Age_18_24ans","Age_25_34ans","Age_35_44ans","Age_45_54ans","Age_55_64ans","Age_plus_64","Marie","Divorce","Veuf","Separe","Jamais_marie","Couple_nn_marie","Sans_diplome","Diplome_lycee","Suivi_universite","Diplome_universite","Moins_15000","Entre_15_25000","Entre_25_35000","Entre_30_50000","Plus_50000"),
+               factorVars = c("SEX","ADDEPEV2_FACTOR"),
+               strata='X_RFSMOK3',
+               data=a)
+
+```
+
+Maintenant, tout est parfaitement équilibré !
+
+##### Régression logistique : Prédiction de la dépression en fonction du tabagisme à partir de l'échantillon apparié
+
+Réalisation de la régression en fournissant les poids de stratification 
+
+```{r message=FALSE}
+reg <- glm(ADDEPEV2~ X_RFSMOK3, data = m.final, family = quasibinomial(link = "logit"),weights=m.final$weights)
+```
+
+Affichage des résultats - Estimation de l'erreur standard robuste régulière
+```{r message=FALSE}
+reg
+summary(reg)
+```
+
+```{r message=FALSE}
+coeftest(reg, vcov. = vcovHC)
+```
+
+On observe donc que le tabagisme a un effet positif significatif sur la dépression. (coefficient à 0.52 et p.value <2e-16).
+
+On obtient alors le modèle suivant : $$logit(E(Y)) = 0.516042X - 1.278737$$
+
+
+
+Calcul et intervalle de confiance de l'odds-ratio
+```{r message=FALSE}
+exp(coef(reg))
+exp(confint(reg))
+
+# Représentation graphique de l'odds ratio avec la fonction ggcoef_model
+ggcoef_model(reg, exponentiate = TRUE)
+
+```
+
+On peut donc supposer que les fumeurs ont 1.67 fois plus de chance de souffrir de dépression que les non fumeurs.
+
+
+```{r message=FALSE}
+#Représentation graphique de l’effet du tabagisme sur la prévalence de dépression
+plot(ggeffect(reg))
+
+# Représentation graphique des différents odds ratios avec la fonction ggcoef_model
+ggcoef_model(reg, exponentiate = TRUE)
+```
+
+Les fumeurs ont environ 33% de chance de souffrir de dépression, tandis que les non fumeurs 22% d'après le modèle de régression logistique.
+
+
+
+#### Méthode de pondération avec Weightit
+
+##### Théorie 
+
+WeightItcontient plusieurs fonctions pour estimer et évaluer les poids d'équilibrage. Ainsi, WeightIt fait pour pondérer ce qui MatchIt a été fait pour la correspondance.
+
+Weightit génère des pondérations à partir d'une formule donnée et d'une entrée de données selon des méthodes et d'autres paramètres spécifiés par l'utilisateur.
+Ici, nous utiliserons la méthode ps pour les poids des scores de propension et ATT comme estimateur puisque nous nous intéressons à l'effet moyen du traitement sur les traités.
+
+
+
+##### Application
+
+Equilibre des covariables avant les poids :
+
+```{r}
+#Utilisation de la fonction bal.tab de cobalt pour regarder l'équilibre des covariables avant les poids
+
+bal.tab(X_RFSMOK3~ X_EDUCAG_FACTOR+ X_AGE_G_FACTOR+ MARITAL+X_INCOMG_FACTOR,
+        data = brfss_asp , estimand = "ATT", m.threshold = .05)
+```
+
+On remarque qu'on a beaucoup de variables déséquilibrées, c'est à dire que les différences de proportion (pour les variables binaires) sont supérieures à 0,05.
+
+Tout d'abord, nous allons utiliser des pondérations de probabilité inverses à partir des scores de propension générés par la régression logistique. 
+Nous devons fournir à weightit() la formule du modèle, l'ensemble de données, l'estimation (ATT) et la méthode d'estimation ( "ps").
+
+```{r}
+# ps : Binary regression PS, scores de propension pondérés
+W.out <- weightit(X_RFSMOK3~ X_EDUCAG_FACTOR+ X_AGE_G_FACTOR+ MARITAL+X_INCOMG_FACTOR,
+                  data = brfss_asp , estimand = "ATT", method = "ps")
+W.out
+```
+```{r}
+#summary(W.out)
+```
+
+
+L'évaluation des poids comporte deux éléments: évaluer l'équilibre des covariables produit par les poids et évaluer si les poids permettront une précision suffisante dans l'estimation de l'effet éventuel. 
+
+- Evaluation de l'équilibre des covariables
+
+```{r}
+#Utilisation de la fonction bal.tab de cobalt
+bal.tab(W.out, m.threshold = .05, disp.v.ratio = TRUE)
+```
+
+Maintenant, tout est équilibré !
+Evaluons maintenant si les poids permettront une précision suffisante dans l'estimation de l'effet éventuel.
+Des pondérations à faible variabilité sont souhaitables car elles améliorent la précision de l'estimateur.
+
+- Evaluation des poids
+
+```{r}
+summary(W.out)
+```
+
+Note : 1 : treated (fumeurs), 0 : control (non fumeurs)
+Avec un ESS de 1156794, on peut estimer que la taille de l'échantillon est très satisfaisante. Aussi, la variabilité des poids a l'air correcte.
+
+##### Estimation de l'effet du tabagisme
+
+```{r}
+# Extraction des poids stockés dans w.out et estimation de l'effet de traitement (du tabagisme)
+
+d.w <- svydesign(~1, weights = W.out$weights, data = brfss_asp)
+
+```
+
+```{r}
+fit <- svyglm(ADDEPEV2 ~ X_RFSMOK3, design = d.w,family=binomial)
+coef(fit)
+```
+
+
+Calcul et intervalle de confiance de l'odds-ratio
+```{r}
+
+exp(coef(fit))
+exp(confint(fit))
+```
+
+
+
+
+Evaluation de l'erreur-type
+```{r}
+# afficher l'erreur-type de l'estimation de l'effet.
+summary(fit)
+```
+On obtient donc les mêmes résultats qu'avec la première méthode matchIT.
+
+
+
+
+
+### Etude de l'effet de la dépression sur le tabagisme
+
+
+#### Correspondance exacte avec MatchIT
+
+##### Application
+
+1. Préparation des données 
+
+
+
+```{r message=FALSE}
+
+
+CreateTableOne(vars=c('SEX',"Age_18_24ans","Age_25_34ans","Age_35_44ans","Age_45_54ans","Age_55_64ans","Age_plus_64","Marie","Divorce","Veuf","Separe","Jamais_marie","Couple_nn_marie","Sans_diplome","Diplome_lycee","Suivi_universite","Diplome_universite","Moins_15000","Entre_15_25000","Entre_25_35000","Entre_30_50000","Plus_50000"),
+               strata='ADDEPEV2',
+               data=brfss_asp_match)
+```
+
+
+On observe qu'il y a 2061552 répondants sans diagnostic de dépression et 503775 souffrant de dépression dans notre échantillon.
+
+Aussi, les 2 groupes  ne sont pas équilibrés puisqu'il existe des différences significatives en fonction des variables socio-démographiques (voir p-value).
+Il faut donc équilibrer les groupes en appariant les individus ayant des profils proches vis à vis de la variable dépression et déterminer pour chaque individu le score de propension de la variable fumeur (c'est le profil par rapport au traitement) avec la fonction global linear model glm.
+
+En utilisant la méthode exacte, tous les individus auront exactement les mêmes scores de propension vis à vis du traitement.
+
+2. Appariement exact avec la fonction matchit
+
+```{r message=FALSE}
+#Appariement exact du score de propension
+
+
+m.out <- matchit(formula=ADDEPEV2~SEX + Age_18_24ans + Age_25_34ans + Age_35_44ans + Age_45_54ans + Age_55_64ans + Age_plus_64 + Marie + Divorce + Veuf + Separe + Jamais_marie + Couple_nn_marie + Sans_diplome + Diplome_lycee + Suivi_universite + Diplome_universite + Moins_15000 + Entre_15_25000 + Entre_25_35000 + Entre_30_50000 + Plus_50000,method="exact",data=brfss_asp_match)
+```
+
+3. Affichage des résultats
+
+Résumé
+```{r message=FALSE}
+#Affichage de l'appariement du score de propension
+
+head(m.out)
+
+```
+
+
+Affichage de quelques individus de la sous classe 1
+```{r message=FALSE}
+# Numéro de lignes des individus appariés
+
+IndApp <- subset(as.data.frame(m.out$subclass),!is.na(as.data.frame(m.out$subclass)))
+IndApp
+
+IndApp %>%
+  filter(`m.out$subclass` == '1') %>%
+  head()
+
+```
+
+```{r}
+# Affichage d'individus appariés
+
+brfss_asp[2,];brfss_asp[510,];brfss_asp[879,];brfss_asp[1419,];brfss_asp[3295,];brfss_asp[12647,]
+```
+
+
+Après vérification, ces 6 individus ayant été appariés dans la même sous classe présentent bien les mêmes caractéristiques (hormi pour le tabagisme et la dépression puisque nous n'apparions pas sur ces critères).
+
+4. Vérification de l'effet de l'appariement exact avec prise en compte des poids
+
+
+```{r message=FALSE}
+# Tous les individus appariés
+
+m.final <- match.data(m.out)
+head(m.final)
+```
+
+
+```{r message=FALSE}
+# On regarde avec la prise en compte des poids
+
+m.final$SEX <- is.name(x="Femme")
+
+
+a <- m.final * m.final$weights
+
+CreateTableOne(vars=c('SEX',"Age_18_24ans","Age_25_34ans","Age_35_44ans","Age_45_54ans","Age_55_64ans","Age_plus_64","Marie","Divorce","Veuf","Separe","Jamais_marie","Couple_nn_marie","Sans_diplome","Diplome_lycee","Suivi_universite","Diplome_universite","Moins_15000","Entre_15_25000","Entre_25_35000","Entre_30_50000","Plus_50000"),
+               factorVars = c("SEX"),
+               strata='ADDEPEV2',
+               data=a)
+
+```
+
+Maintenant, tout est parfaitement équilibré !
+
+
+##### Régression logistique : Prédiction de la dépression en fonction du tabagisme à partir de l'échantillon apparié
+
+Réalisation de la régression en fournissant les poids de stratification 
+
+```{r message=FALSE}
+reg <- glm(X_RFSMOK3~ ADDEPEV2, data = m.final, family = quasibinomial(link = "logit"),weights=m.final$weights)
+```
+
+Affichage des résultats avec la fonction summary
+```{r message=FALSE}
+reg
+summary(reg)
+```
+- Estimation de l'erreur standard robuste régulière
+
+La fonction summary se basant sur l'hypothèse d'homoscédasticité (c'est à dire qu'elle suppose que la variance des erreurs est constante), nous allons donc estimer l'erreur standard robuste avec la fonction coeftest en paramétrant vcov. sur vcovHC.(nous utilisons cette option car nous avons un grand échantillon)
+vcovHC est une fonction d'estimation d'une matrice de covariance robuste de paramètres pour un modèle de panel à effets fixes ou à effets aléatoires selon la méthode White que l'on peut utiliser en tant que paramètre dans la fonction coeftest.
+
+```{r message=FALSE}
+coeftest(reg, vcov. = vcovHC)
+```
+```{r}
+coeftest(reg, vcov. = vcovHC(reg, type = "HC0"))
+```
+
+
+
+On observe donc que le tabagisme a un effet positif significatif sur la dépression. (coefficient à 0.52 et p.value <2e-16).
+
+On obtient alors le modèle suivant : $$logit(E(Y)) = 0.5011592X - 1.6163585$$
+
+
+
+Calcul et intervalle de confiance de l'odds-ratio
+
+```{r message=FALSE}
+exp(coef(reg))
+exp(confint(reg))
+
+# Représentation graphique de l'odds ratio avec la fonction ggcoef_model
+ggcoef_model(reg, exponentiate = TRUE)
+
+```
+
+On peut donc supposer que les dépressifs ont 1.65 fois plus de chance d'être fumeur que les non dépressifs.
+
+
+```{r message=FALSE}
+#Représentation graphique de l’effet du tabagisme sur la prévalence de dépression
+plot(ggeffect(reg))
+
+# Représentation graphique des différents odds ratios avec la fonction ggcoef_model
+ggcoef_model(reg, exponentiate = TRUE)
+```
+
+Les dépressifs ont environ 23% de chance d'être fumeur, tandis que les non dépressifs 17% d'après le modèle de régression logistique.
+
+
+
+#### Méthode de pondération avec Weightit
+
+
+
+##### Application
+
+Equilibre des covariables avant les poids :
+
+```{r}
+#Utilisation de la fonction bal.tab de cobalt pour regarder l'équilibre des covariables avant les poids
+
+bal.tab(ADDEPEV2~ X_EDUCAG_FACTOR+ X_AGE_G_FACTOR+ MARITAL+X_INCOMG_FACTOR,
+        data = brfss_asp , estimand = "ATT", m.threshold = .05)
+```
+
+On remarque qu'on a beaucoup de variables déséquilibrées, c'est à dire que les différences de proportion (pour les variables binaires) sont supérieures à 0,05.
+
+Tout d'abord, nous allons utiliser des pondérations de probabilité inverses à partir des scores de propension générés par la régression logistique. 
+Nous devons fournir à weightit() la formule du modèle, l'ensemble de données, l'estimation (ATT) et la méthode d'estimation ( "ps").
+
+```{r}
+# ps : Binary regression PS, scores de propension pondérés
+W.out <- weightit(ADDEPEV2~ X_EDUCAG_FACTOR+ X_AGE_G_FACTOR+ MARITAL+X_INCOMG_FACTOR,
+                  data = brfss_asp , estimand = "ATT", method = "ps")
+W.out
+```
+
+
+
+L'évaluation des poids comporte deux éléments: évaluer l'équilibre des covariables produit par les poids et évaluer si les poids permettront une précision suffisante dans l'estimation de l'effet éventuel. 
+
+- Evaluation de l'équilibre des covariables
+
+```{r}
+#Utilisation de la fonction bal.tab de cobalt
+bal.tab(W.out, m.threshold = .05, disp.v.ratio = TRUE)
+```
+
+Maintenant, tout est équilibré !
+Evaluons maintenant si les poids permettront une précision suffisante dans l'estimation de l'effet éventuel.
+Des pondérations à faible variabilité sont souhaitables car elles améliorent la précision de l'estimateur.
+
+- Evaluation des poids
+
+```{r}
+summary(W.out)
+```
+
+Note : 1 : treated (fumeurs), 0 : control (non fumeurs)
+Avec un ESS de 1574899, on peut estimer que la taille de l'échantillon est très satisfaisante. Aussi, la variabilité des poids est correcte.
+
+##### Estimation de l'effet du tabagisme
+
+```{r}
+# Extraction des poids stockés dans w.out et estimation de l'effet de traitement (du tabagisme)
+
+d.w <- svydesign(~1, weights = W.out$weights, data = brfss_asp)
+
+```
+
+```{r}
+fit <- svyglm(X_RFSMOK3 ~ ADDEPEV2, design = d.w,family=binomial)
+coef(fit)
+```
+
+
+Calcul et intervalle de confiance de l'odds-ratio
+```{r}
+
+exp(coef(fit))
+exp(confint(fit))
+```
+
+
+
+
+Evaluation de l'erreur-type
+```{r}
+# afficher l'erreur-type de l'estimation de l'effet.
+summary(fit)
+```
+
+On obtient donc les mêmes résultats qu'avec la première méthode matchIT.
+
